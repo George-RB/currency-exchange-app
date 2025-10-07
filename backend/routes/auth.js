@@ -46,5 +46,3 @@ const logAction = (userLogin, action) => {
 
 // Добавляем к экспорту
 module.exports = { router, logAction };
-
-// module.exports = router;

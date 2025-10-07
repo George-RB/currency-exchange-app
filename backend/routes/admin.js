@@ -1,20 +1,38 @@
 const express = require('express');
 const { simpleAuth } = require('../middleware/auth');
-const { logAction } = require('./auth');
+const connection = require('../config/database');
 const router = express.Router();
 
-// Роут для добавления курсов
-router.post('/rates', simpleAuth, (req, res) => {
+// Обновленный роут установки курсов
+router.post('/rates', simpleAuth, async (req, res) => {
   const { currency, rate } = req.body;
   const user = req.user;
 
-  // ПРОСТАЯ логика - просто логируем
-  logAction(user.login, `Установлен курс ${currency} = ${rate}`);
+  // Сохраняем курс в БД
+  connection.query(
+    'INSERT INTO currency_rates (currency_code, rate, date) VALUES (?, ?, CURDATE())',
+    [currency, rate],
+    (error) => {
+      if (error) {
+        console.error('Ошибка сохранения курса:', error);
+        return res.status(500).json({ error: 'Ошибка сохранения курса' });
+      }
 
-  res.json({
-    success: true,
-    message: `Курс ${currency} установлен на ${rate}`,
-  });
+      // Логируем действие
+      connection.query(
+        'INSERT INTO operations_log (user_id, action_description, datetime) VALUES ((SELECT id FROM users WHERE login = ?), ?, NOW())',
+        [user.login, `Установлен курс ${currency} = ${rate}`],
+        (error) => {
+          if (error) console.error('Ошибка логирования:', error);
+        }
+      );
+
+      res.json({
+        success: true,
+        message: `Курс ${currency} установлен на ${rate}`,
+      });
+    }
+  );
 });
 
 module.exports = router;
