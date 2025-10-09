@@ -22,18 +22,25 @@ router.post('/exchange', simpleAuth, async (req, res) => {
   const { fromCurrency, toCurrency, amount } = req.body;
   const user = req.user;
 
+  console.log('Запрос на обмен:', { fromCurrency, toCurrency, amount, user });
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: 'Сумма должна быть положительной' });
+  }
+  if (fromCurrency === toCurrency) {
+    return res.status(400).json({ error: 'Валюты должны быть разными' });
+  }
+
   try {
     // Получаем реальные курсы из БД
     const fromRate = await getCurrentRate(fromCurrency);
     const toRate = await getCurrentRate(toCurrency);
 
-    if (!fromRate || !toRate) {
-      return res.status(400).json({ error: 'Курс для валюты не найден' });
-    }
+    console.log('📊 Курсы из БД:', { fromRate, toRate });
 
     // Рассчитываем результат (через базовую валюту)
     const amountInBase = amount * fromRate; // Конвертируем в базовую валюту
-    const result = amountInBase / toRate; // Конвертируем в целевую валюту
+    const result = (amount * fromRate) / toRate; // Конвертируем в целевую валюту
 
     // Сохраняем операцию в БД
     connection.query(
@@ -61,7 +68,6 @@ router.post('/exchange', simpleAuth, async (req, res) => {
   }
 });
 
-// Добавь в operator.js
 router.get('/history', simpleAuth, (req, res) => {
   const user = req.user;
 

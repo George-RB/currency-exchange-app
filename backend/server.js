@@ -2,6 +2,7 @@ const express = require('express');
 const authRoutes = require('./routes/auth').router;
 const operatorRoutes = require('./routes/operator');
 const adminRoutes = require('./routes/admin');
+require('dotenv').config();
 const PORT = 3000;
 
 const app = express();
@@ -13,25 +14,6 @@ app.use(require('cors')());
 app.use('/api/auth', authRoutes);
 app.use('/api/operator', operatorRoutes);
 app.use('/api/admin', adminRoutes);
-
-const mysql = require('mysql2');
-
-// Настройки подключения к БД
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'r00t',
-  database: 'exchange_db',
-});
-
-// Проверяем подключение
-connection.connect((err) => {
-  if (err) {
-    console.error('❌ Ошибка подключения к БД:', err);
-    return;
-  }
-  console.log('✅ Успешно подключены к MySQL базе данных');
-});
 
 // Новый тестовый роут - получаем курсы валют из БД
 app.get('/api/rates', (req, res) => {
