@@ -1,5 +1,3 @@
-// backend/middleware/simple-auth.js - ПРОСТАЯ АВТОРИЗАЦИЯ
-
 const simpleAuth = (req, res, next) => {
   // Получаем логин и роль из заголовков (вместо сложного JWT)
   const userLogin = req.headers['x-user-login'];

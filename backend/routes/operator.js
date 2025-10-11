@@ -73,6 +73,32 @@ router.post('/exchange', simpleAuth, async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+
+// GET запрос для получения истории операций
+router.get('/history', simpleAuth, (req, res) => {
+  const user = req.user;
+
+  connection.query(
+    `SELECT action_description, datetime 
+     FROM operations_log 
+     WHERE user_id = (SELECT id FROM users WHERE login = ?) 
+     AND DATE(datetime) = CURDATE()
+     ORDER BY datetime DESC`,
+    [user.login],
+    (error, results) => {
+      if (error) {
+        console.error('Ошибка загрузки истории:', error);
+        return res.status(500).json({ error: 'Ошибка загрузки истории' });
+      }
+
+      res.json({
+        success: true,
+        history: results,
+      });
+    }
+  );
+});
+
 const getCurrentRate = async (currencyCode) => {
   return new Promise((resolve, reject) => {
     console.log(`🔍 Ищем курс для: ${currencyCode}`);
