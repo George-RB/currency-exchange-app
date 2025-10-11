@@ -81,3 +81,63 @@
 .submitButton:hover {
   background: #218838;
 }
+
+/* Добавляем в конец файла */
+.resetSection {
+  margin-top: 30px;
+  padding: 25px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+}
+
+.resetTitle {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #856404;
+}
+
+.resetButton {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.resetButton:hover {
+  background: #c82333;
+}
+
+.resetButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.currentRates {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.ratesTitle {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.rateItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.rateItem:last-child {
+  border-bottom: none;
+}

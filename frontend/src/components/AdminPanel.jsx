@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import STYLES from '../styles/AdminPanel.module.css';
 
 const AdminPanel = () => {
@@ -6,9 +6,44 @@ const AdminPanel = () => {
     currency: 'USD',
     rate: '',
   });
+  const [currentRates, setCurrentRates] = useState({});
+  const [loading, setLoading] = useState(false);
 
+  // Загружаем текущие курсы при монтировании
+  useEffect(() => {
+    loadCurrentRates();
+  }, []);
+
+  const loadCurrentRates = async () => {
+    try {
+      console.log('🟡 Начинаем загрузку курсов...');
+      const response = await fetch('http://localhost:3000/api/rates');
+
+      console.log('📡 Статус ответа:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
+      if (!response.ok) {
+        throw new Error(`Ошибка HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 Полученные данные:', data);
+
+      const rates = {};
+      data.forEach((rate) => {
+        rates[rate.currency_code] = rate.rate;
+      });
+
+      console.log('🟢 Преобразованные курсы:', rates);
+      setCurrentRates(rates);
+    } catch (error) {
+      console.error('🔴 Ошибка загрузки курсов:', error);
+      // Можно добавить уведомление для пользователя
+    }
+  };
   const handleSetRate = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     const user = JSON.parse(localStorage.getItem('user'));
 
@@ -27,9 +62,51 @@ const AdminPanel = () => {
       if (data.success) {
         alert(data.message);
         setRateForm({ ...rateForm, rate: '' });
+        loadCurrentRates(); // Обновляем список курсов
       }
     } catch (error) {
       console.error('Ошибка:', error);
+      alert('Ошибка установки курса');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetRates = async () => {
+    if (
+      !window.confirm(
+        'Вы уверены, что хотите сбросить все курсы к начальным значениям?'
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    try {
+      const response = await fetch(
+        'http://localhost:3000/api/admin/reset-rates',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-login': user.login,
+            'x-user-role': user.role,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message);
+        loadCurrentRates(); // Обновляем список курсов
+      }
+    } catch (error) {
+      console.error('Ошибка:', error);
+      alert('Ошибка сброса курсов');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,11 +147,45 @@ const AdminPanel = () => {
             />
           </div>
 
-          <button type="submit" className={STYLES.submitButton}>
-            Установить курс
+          <button
+            type="submit"
+            disabled={loading}
+            className={STYLES.submitButton}
+          >
+            {loading ? 'Сохранение...' : 'Установить курс'}
           </button>
         </div>
       </form>
+
+      {/* Секция сброса курсов */}
+      <div className={STYLES.resetSection}>
+        <h3 className={STYLES.resetTitle}>Сброс курсов валют</h3>
+        <p>Вернуть все курсы к начальным значениям:</p>
+        <button
+          onClick={handleResetRates}
+          disabled={loading}
+          className={STYLES.resetButton}
+        >
+          {loading ? 'Сброс...' : 'Сбросить все курсы'}
+        </button>
+
+        {/* Текущие курсы */}
+        <div className={STYLES.currentRates}>
+          <h4 className={STYLES.ratesTitle}>Текущие курсы:</h4>
+          <div className={STYLES.rateItem}>
+            <span>USD:</span>
+            <span>{currentRates.USD || 'не установлен'}</span>
+          </div>
+          <div className={STYLES.rateItem}>
+            <span>EUR:</span>
+            <span>{currentRates.EUR || 'не установлен'}</span>
+          </div>
+          <div className={STYLES.rateItem}>
+            <span>BYN:</span>
+            <span>{currentRates.BYN || 'не установлен'}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

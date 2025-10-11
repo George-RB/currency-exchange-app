@@ -35,4 +35,51 @@ router.post('/rates', simpleAuth, async (req, res) => {
   );
 });
 
+// Роут для сброса курсов к начальным значениям
+router.post('/reset-rates', simpleAuth, (req, res) => {
+  const user = req.user;
+
+  // Начальные курсы (можно вынести в конфиг)
+  const defaultRates = [
+    { currency: 'USD', rate: 2.5 },
+    { currency: 'EUR', rate: 3.0 },
+    { currency: 'BYN', rate: 1.0 },
+  ];
+
+  // Удаляем старые курсы и устанавливаем новые
+  connection.query('DELETE FROM currency_rates', (error) => {
+    if (error) {
+      console.error('Ошибка сброса курсов:', error);
+      return res.status(500).json({ error: 'Ошибка сброса курсов' });
+    }
+
+    // Добавляем начальные курсы
+    const values = defaultRates.map((rate) => [rate.currency, rate.rate]);
+    connection.query(
+      'INSERT INTO currency_rates (currency_code, rate, date) VALUES ?',
+      [values.map((item) => [...item, new Date()])],
+      (error) => {
+        if (error) {
+          console.error('Ошибка установки начальных курсов:', error);
+          return res.status(500).json({ error: 'Ошибка установки курсов' });
+        }
+
+        // Логируем действие
+        connection.query(
+          'INSERT INTO operations_log (user_id, action_description, datetime) VALUES ((SELECT id FROM users WHERE login = ?), ?, NOW())',
+          [user.login, 'Сброс всех курсов к начальным значениям'],
+          (error) => {
+            if (error) console.error('Ошибка логирования:', error);
+          }
+        );
+
+        res.json({
+          success: true,
+          message: 'Курсы сброшены к начальным значениям',
+        });
+      }
+    );
+  });
+});
+
 module.exports = router;
