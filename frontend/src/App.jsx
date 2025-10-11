@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import OperatorPanel from './components/OperatorPanel';
+import STYLES from './styles/App.module.css';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -29,12 +30,12 @@ function App() {
   }
 
   return (
-    <div>
-      <header style={{ padding: '10px', background: '#f5f5f5' }}>
-        <span>
+    <div className={STYLES.appContainer}>
+      <header className={STYLES.appHeader}>
+        <span className={STYLES.userInfo}>
           Пользователь: {user.login} ({user.role})
         </span>
-        <button onClick={handleLogout} style={{ marginLeft: '20px' }}>
+        <button className={STYLES.logoutButton} onClick={handleLogout}>
           Выйти
         </button>
       </header>

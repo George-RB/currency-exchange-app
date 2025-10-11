@@ -1,0 +1,170 @@
+/* styles/OperatorPanel.module.css */
+.operatorContainer {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.exchangeForm {
+  margin-bottom: 30px;
+  padding: 25px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.formTitle {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.errorMessage {
+  background: #ffe6e6;
+  color: #d00;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #d00;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.formGroup {
+  margin-bottom: 15px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.currencyRow {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.currencyGroup {
+  flex: 1;
+}
+
+.arrow {
+  margin-top: 25px;
+  font-size: 20px;
+  color: #666;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  background: white;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.submitButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.successMessage {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f0f8f0;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+}
+
+.successTitle {
+  color: #4caf50;
+  margin-top: 0;
+}
+
+.resultText {
+  font-size: 18px;
+  margin: 10px 0;
+}
+
+.rateText {
+  margin: 5px 0;
+}
+
+.historySection {
+  margin-top: 30px;
+}
+
+.historyTitle {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  color: #333;
+}
+
+.emptyHistory {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.historyList {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.historyItem {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.historyItem:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.historyDescription {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.historyTime {
+  color: #666;
+  font-size: 14px;
+}

@@ -1,0 +1,83 @@
+/* styles/AdminPanel.module.css */
+.adminContainer {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.title {
+  margin-bottom: 30px;
+  color: #333;
+  text-align: center;
+}
+
+.rateForm {
+  margin-bottom: 20px;
+  padding: 25px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.formTitle {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.formRow {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.formGroup {
+  flex: 1;
+}
+
+.label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  background: white;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.submitButton {
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.submitButton:hover {
+  background: #218838;
+}

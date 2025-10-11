@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import STYLES from '../styles/Login.module.css';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -20,8 +21,7 @@ const Login = ({ onLogin }) => {
 
       const data = await response.json();
 
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
+      if (response.ok && data.success) {
         localStorage.setItem('user', JSON.stringify(data.user));
         onLogin(data.user);
       } else {
@@ -41,37 +41,45 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div style={{ maxWidth: '300px', margin: '50px auto' }}>
-      <h2>Вход в систему</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
+    <div className={STYLES.loginContainer}>
+      <h2 className={STYLES.loginTitle}>Вход в систему</h2>
+      <form onSubmit={handleSubmit} className={STYLES.loginForm}>
+        <div className={STYLES.formGroup}>
           <input
             type="text"
             name="login"
             placeholder="Логин"
             value={formData.login}
             onChange={handleChange}
+            className={STYLES.formInput}
             required
           />
         </div>
-        <div>
+        <div className={STYLES.formGroup}>
           <input
             type="password"
             name="password"
             placeholder="Пароль"
             value={formData.password}
             onChange={handleChange}
+            className={STYLES.formInput}
             required
           />
         </div>
-        <button type="submit">Войти</button>
+        <button type="submit" className={STYLES.submitButton}>
+          Войти
+        </button>
       </form>
-      <div style={{ marginTop: '20px', fontSize: '12px' }}>
-        <p>
+      <div className={STYLES.testUsers}>
+        <p className={STYLES.testUsersTitle}>
           <strong>Тестовые пользователи:</strong>
         </p>
-        <p>Админ: login: admin, password: admin123</p>
-        <p>Оператор: login: operator, password: operator123</p>
+        <p className={STYLES.testUser}>
+          Админ: login: admin, password: admin123
+        </p>
+        <p className={STYLES.testUser}>
+          Оператор: login: operator, password: operator123
+        </p>
       </div>
     </div>
   );

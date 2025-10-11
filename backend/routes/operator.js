@@ -1,48 +1,53 @@
 const express = require('express');
 const { simpleAuth } = require('../middleware/auth');
-const connection = require('../config/database'); // Добавляем подключение к БД
+const connection = require('../config/database');
 const router = express.Router();
 
-// Функция для получения актуального курса из БД
-const getCurrentRate = async (currencyCode) => {
-  return new Promise((resolve, reject) => {
-    connection.query(
-      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC LIMIT 1',
-      [currencyCode],
-      (error, results) => {
-        if (error) reject(error);
-        resolve(results[0] ? results[0].rate : null);
-      }
-    );
-  });
-};
-
-// Обновленный роут обмена валют
 router.post('/exchange', simpleAuth, async (req, res) => {
+  console.log('🟢 POST /exchange вызван');
+  console.log('📦 Тело запроса:', req.body);
+
   const { fromCurrency, toCurrency, amount } = req.body;
   const user = req.user;
 
-  console.log('Запрос на обмен:', { fromCurrency, toCurrency, amount, user });
-
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ error: 'Сумма должна быть положительной' });
-  }
-  if (fromCurrency === toCurrency) {
-    return res.status(400).json({ error: 'Валюты должны быть разными' });
-  }
-
   try {
-    // Получаем реальные курсы из БД
+    // Валидация
+    if (!amount || amount <= 0) {
+      console.log('❌ Неверная сумма:', amount);
+      return res.status(400).json({ error: 'Сумма должна быть положительной' });
+    }
+    if (fromCurrency === toCurrency) {
+      console.log('❌ Одинаковые валюты:', fromCurrency, toCurrency);
+      return res.status(400).json({ error: 'Валюты должны быть разными' });
+    }
+
+    // Получаем курсы
+    console.log(`🔍 Получаем курс для ${fromCurrency}...`);
     const fromRate = await getCurrentRate(fromCurrency);
+    console.log(`🔍 Получаем курс для ${toCurrency}...`);
     const toRate = await getCurrentRate(toCurrency);
 
-    console.log('📊 Курсы из БД:', { fromRate, toRate });
+    console.log('📊 Курсы из БД:', {
+      fromCurrency,
+      fromRate,
+      toCurrency,
+      toRate,
+    });
 
-    // Рассчитываем результат (через базовую валюту)
-    const amountInBase = amount * fromRate; // Конвертируем в базовую валюту
-    const result = (amount * fromRate) / toRate; // Конвертируем в целевую валюту
+    // Проверяем что курсы найдены
+    if (fromRate === null || toRate === null) {
+      console.error('❌ Курсы не найдены');
+      return res.status(400).json({ error: 'Курсы для валют не найдены' });
+    }
 
-    // Сохраняем операцию в БД
+    // Расчет
+    const result = (amount * fromRate) / toRate;
+    console.log(
+      '🧮 Расчет:',
+      `${amount} × ${fromRate} / ${toRate} = ${result}`
+    );
+
+    // Сохранение
     connection.query(
       'INSERT INTO operations_log (user_id, action_description, datetime) VALUES ((SELECT id FROM users WHERE login = ?), ?, NOW())',
       [
@@ -51,10 +56,11 @@ router.post('/exchange', simpleAuth, async (req, res) => {
       ],
       (error) => {
         if (error) {
-          console.error('Ошибка сохранения операции:', error);
+          console.error('❌ Ошибка сохранения:', error);
           return res.status(500).json({ error: 'Ошибка сохранения операции' });
         }
 
+        console.log('✅ Операция успешно сохранена');
         res.json({
           success: true,
           result: result.toFixed(2),
@@ -63,33 +69,28 @@ router.post('/exchange', simpleAuth, async (req, res) => {
       }
     );
   } catch (error) {
-    console.error('Ошибка при обмене:', error);
+    console.error('💥 Ошибка при обмене:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+const getCurrentRate = async (currencyCode) => {
+  return new Promise((resolve, reject) => {
+    console.log(`🔍 Ищем курс для: ${currencyCode}`);
 
-router.get('/history', simpleAuth, (req, res) => {
-  const user = req.user;
+    connection.query(
+      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC LIMIT 1',
+      [currencyCode],
+      (error, results) => {
+        if (error) {
+          console.error(`❌ Ошибка БД для ${currencyCode}:`, error);
+          reject(error);
+          return;
+        }
 
-  connection.query(
-    `SELECT action_description, datetime 
-     FROM operations_log 
-     WHERE user_id = (SELECT id FROM users WHERE login = ?) 
-     AND DATE(datetime) = CURDATE()
-     ORDER BY datetime DESC`,
-    [user.login],
-    (error, results) => {
-      if (error) {
-        console.error('Ошибка получения истории:', error);
-        return res.status(500).json({ error: 'Ошибка получения истории' });
+        console.log(`📊 Результат запроса для ${currencyCode}:`, results);
+        resolve(results[0] ? results[0].rate : null);
       }
-
-      res.json({
-        success: true,
-        history: results,
-      });
-    }
-  );
-});
-
+    );
+  });
+};
 module.exports = router;

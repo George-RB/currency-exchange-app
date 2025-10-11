@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import STYLES from '../styles/AdminPanel.module.css';
 
 const AdminPanel = () => {
   const [rateForm, setRateForm] = useState({
@@ -33,32 +34,46 @@ const AdminPanel = () => {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Панель администратора</h1>
+    <div className={STYLES.adminContainer}>
+      <h1 className={STYLES.title}>Панель администратора</h1>
 
-      <form onSubmit={handleSetRate} style={{ marginBottom: '20px' }}>
-        <h3>Установить курс валюты</h3>
-        <div>
-          <select
-            value={rateForm.currency}
-            onChange={(e) =>
-              setRateForm({ ...rateForm, currency: e.target.value })
-            }
-          >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="BYN">BYN</option>
-          </select>
-          <input
-            type="number"
-            step="0.0001"
-            placeholder="Курс"
-            value={rateForm.rate}
-            onChange={(e) => setRateForm({ ...rateForm, rate: e.target.value })}
-            required
-          />
+      <form onSubmit={handleSetRate} className={STYLES.rateForm}>
+        <h3 className={STYLES.formTitle}>Установить курс валюты</h3>
+        <div className={STYLES.formRow}>
+          <div className={STYLES.formGroup}>
+            <label className={STYLES.label}>Валюта:</label>
+            <select
+              value={rateForm.currency}
+              onChange={(e) =>
+                setRateForm({ ...rateForm, currency: e.target.value })
+              }
+              className={STYLES.select}
+            >
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="BYN">BYN</option>
+            </select>
+          </div>
+
+          <div className={STYLES.formGroup}>
+            <label className={STYLES.label}>Курс:</label>
+            <input
+              type="number"
+              step="0.0001"
+              placeholder="Курс"
+              value={rateForm.rate}
+              onChange={(e) =>
+                setRateForm({ ...rateForm, rate: e.target.value })
+              }
+              required
+              className={STYLES.input}
+            />
+          </div>
+
+          <button type="submit" className={STYLES.submitButton}>
+            Установить курс
+          </button>
         </div>
-        <button type="submit">Установить курс</button>
       </form>
     </div>
   );
