@@ -12,6 +12,7 @@ const AdminPanel = () => {
   // Загружаем текущие курсы при монтировании
   useEffect(() => {
     loadCurrentRates();
+    loadReports();
   }, []);
 
   const loadCurrentRates = async () => {
@@ -110,6 +111,17 @@ const AdminPanel = () => {
     }
   };
 
+  const [reports, setReports] = useState([]);
+
+  const loadReports = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const response = await fetch('http://localhost:3000/api/admin/reports', {
+      headers: { 'x-user-login': user.login, 'x-user-role': user.role },
+    });
+    const data = await response.json();
+    if (data.success) setReports(data.reports);
+  };
+
   return (
     <div className={STYLES.adminContainer}>
       <h1 className={STYLES.title}>Панель администратора</h1>
@@ -184,6 +196,15 @@ const AdminPanel = () => {
             <span>BYN:</span>
             <span>{currentRates.BYN || 'не установлен'}</span>
           </div>
+        </div>
+
+        <div className={STYLES.reportsSection}>
+          <h3>Отчеты по обменам</h3>
+          {reports.map((report) => (
+            <div key={report.date}>
+              {report.date}: {report.operations_count} операций
+            </div>
+          ))}
         </div>
       </div>
     </div>

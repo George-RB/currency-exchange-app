@@ -104,7 +104,7 @@ const getCurrentRate = async (currencyCode) => {
     console.log(`🔍 Ищем курс для: ${currencyCode}`);
 
     connection.query(
-      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC LIMIT 1',
+      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC, id DESC LIMIT 1',
       [currencyCode],
       (error, results) => {
         if (error) {

@@ -141,3 +141,19 @@
 .rateItem:last-child {
   border-bottom: none;
 }
+
+.reportsSection {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.reportItem {
+  padding: 8px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.reportItem:last-child {
+  border-bottom: none;
+}

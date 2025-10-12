@@ -82,4 +82,21 @@ router.post('/reset-rates', simpleAuth, (req, res) => {
   });
 });
 
+router.get('/reports', simpleAuth, (req, res) => {
+  connection.query(
+    `SELECT DATE(datetime) as date, COUNT(*) as operations_count
+     FROM operations_log 
+     WHERE action_description LIKE 'Обмен%'
+     GROUP BY DATE(datetime) 
+     ORDER BY date DESC`,
+    (error, results) => {
+      if (error) {
+        console.error('Ошибка отчетов:', error);
+        return res.status(500).json({ error: 'Ошибка загрузки отчетов' });
+      }
+      res.json({ success: true, reports: results });
+    }
+  );
+});
+
 module.exports = router;
