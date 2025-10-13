@@ -10,10 +10,18 @@ const app = express();
 app.use(express.json());
 app.use(require('cors')());
 
+// раздача статических файлов фронтенда
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/operator', operatorRoutes);
 app.use('/api/admin', adminRoutes);
+
+// для SPA роутинга
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
 
 // Новый тестовый роут - получаем курсы валют из БД
 app.get('/api/rates', (req, res) => {
