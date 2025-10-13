@@ -5,6 +5,7 @@ const adminRoutes = require('./routes/admin');
 const path = require('path');
 require('dotenv').config();
 const PORT = 3000;
+const connection = require('./config/database');
 
 const app = express();
 
@@ -36,7 +37,6 @@ app.get('/api/rates', (req, res) => {
 });
 
 // connection импортирован
-const connection = require('./config/database');
 
 app.get('/api/rates', (req, res) => {
   connection.query(
