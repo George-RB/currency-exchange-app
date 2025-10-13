@@ -21,7 +21,7 @@ app.use('/api/operator', operatorRoutes);
 app.use('/api/admin', adminRoutes);
 
 // для SPA роутинга
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
