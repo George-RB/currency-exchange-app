@@ -2,6 +2,7 @@ const express = require('express');
 const authRoutes = require('./routes/auth').router;
 const operatorRoutes = require('./routes/operator');
 const adminRoutes = require('./routes/admin');
+const path = require('path');
 require('dotenv').config();
 const PORT = 3000;
 
