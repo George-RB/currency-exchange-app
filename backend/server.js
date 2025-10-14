@@ -10,7 +10,18 @@ const connection = require('./config/database');
 const app = express();
 
 app.use(express.json());
-app.use(require('cors')());
+// app.use(require('cors')());
+app.use(
+  require('cors')({
+    origin: [
+      'http://localhost:5173',
+      'https://currency-exchange-app-zkkc.onrender.com',
+      'http://localhost:3000',
+    ],
+    credentials: false,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  })
+);
 
 // раздача статических файлов фронтенда
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -32,15 +43,18 @@ app.get('/', (req, res) => {
 });
 
 // Новый тестовый роут - получаем курсы валют из БД
-app.get('/api/rates', (req, res) => {
-  connection.query('SELECT * FROM currency_rates', (error, results) => {
-    if (error) {
-      console.error('Ошибка запроса:', error);
-      return res.status(500).json({ error: 'Ошибка базы данных' });
-    }
-    res.json(results); // отправляем курсы валют клиенту
-  });
-});
+app.get(
+  'https://currency-exchange-app-zkkc.onrender.com/api/rates',
+  (req, res) => {
+    connection.query('SELECT * FROM currency_rates', (error, results) => {
+      if (error) {
+        console.error('Ошибка запроса:', error);
+        return res.status(500).json({ error: 'Ошибка базы данных' });
+      }
+      res.json(results); // отправляем курсы валют клиенту
+    });
+  }
+);
 
 // connection импортирован
 
