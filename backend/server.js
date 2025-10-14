@@ -16,9 +16,15 @@ app.use(require('cors')());
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/operator', operatorRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('https://currency-exchange-app-zkkc.onrender.com/api/auth', authRoutes);
+app.use(
+  'https://currency-exchange-app-zkkc.onrender.com/api/operator',
+  operatorRoutes
+);
+app.use(
+  'https://currency-exchange-app-zkkc.onrender.com/api/admin',
+  adminRoutes
+);
 
 // для SPA роутинга
 app.get('/', (req, res) => {
@@ -38,21 +44,27 @@ app.get('/api/rates', (req, res) => {
 
 // connection импортирован
 
-app.get('/api/rates', (req, res) => {
-  connection.query(
-    'SELECT currency_code, rate FROM currency_rates ORDER BY date DESC',
-    (error, results) => {
-      if (error) {
-        console.error('Ошибка запроса курсов:', error);
-        return res.status(500).json({ error: 'Ошибка базы данных' });
+app.get(
+  'https://currency-exchange-app-zkkc.onrender.com/api/rates',
+  (req, res) => {
+    connection.query(
+      'SELECT currency_code, rate FROM currency_rates ORDER BY date DESC',
+      (error, results) => {
+        if (error) {
+          console.error('Ошибка запроса курсов:', error);
+          return res.status(500).json({ error: 'Ошибка базы данных' });
+        }
+        console.log('📋 Курсы из БД:', results); // для диагностики
+        res.json(results);
       }
-      console.log('📋 Курсы из БД:', results); // для диагностики
-      res.json(results);
-    }
-  );
-});
+    );
+  }
+);
 
-app.get('/api/rates/:currency', (req, res) => {});
+app.get(
+  'https://currency-exchange-app-zkkc.onrender.com/api/rates/:currency',
+  (req, res) => {}
+);
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
