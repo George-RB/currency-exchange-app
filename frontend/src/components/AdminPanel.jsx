@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import STYLES from '../styles/AdminPanel.module.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const AdminPanel = () => {
   const [rateForm, setRateForm] = useState({
     currency: 'USD',
@@ -18,7 +20,7 @@ const AdminPanel = () => {
   const loadCurrentRates = async () => {
     try {
       console.log('🟡 Начинаем загрузку курсов...');
-      const response = await fetch('http://localhost:3000/api/rates');
+      const response = await fetch(`${API_URL}/api/rates`);
 
       console.log('📡 Статус ответа:', response.status);
       console.log('📡 Response ok:', response.ok);
@@ -49,7 +51,7 @@ const AdminPanel = () => {
     const user = JSON.parse(localStorage.getItem('user'));
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/rates', {
+      const response = await fetch(`${API_URL}/api/admin/rates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,17 +88,14 @@ const AdminPanel = () => {
     const user = JSON.parse(localStorage.getItem('user'));
 
     try {
-      const response = await fetch(
-        'http://localhost:3000/api/admin/reset-rates',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-login': user.login,
-            'x-user-role': user.role,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/api/admin/reset-rates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-login': user.login,
+          'x-user-role': user.role,
+        },
+      });
 
       const data = await response.json();
       if (data.success) {
@@ -115,7 +114,7 @@ const AdminPanel = () => {
 
   const loadReports = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
-    const response = await fetch('http://localhost:3000/api/admin/reports', {
+    const response = await fetch(`${API_URL}/api/admin/reports`, {
       headers: { 'x-user-login': user.login, 'x-user-role': user.role },
     });
     const data = await response.json();

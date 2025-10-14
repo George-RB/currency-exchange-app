@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import STYLES from '../styles/OperatorPanel.module.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const OperatorPanel = () => {
   const [formData, setFormData] = useState({
     fromCurrency: 'USD',
@@ -18,16 +20,13 @@ const OperatorPanel = () => {
 
     try {
       // 👇 Создаем отдельный GET запрос для истории
-      const response = await fetch(
-        'http://localhost:3000/api/operator/history',
-        {
-          method: 'GET',
-          headers: {
-            'x-user-login': user.login,
-            'x-user-role': user.role,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/api/operator/history`, {
+        method: 'GET',
+        headers: {
+          'x-user-login': user.login,
+          'x-user-role': user.role,
+        },
+      });
 
       const data = await response.json();
       if (data.success) {
@@ -53,18 +52,15 @@ const OperatorPanel = () => {
     const user = JSON.parse(localStorage.getItem('user'));
 
     try {
-      const response = await fetch(
-        'http://localhost:3000/api/operator/exchange',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-login': user.login,
-            'x-user-role': user.role,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/operator/exchange`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-login': user.login,
+          'x-user-role': user.role,
+        },
+        body: JSON.stringify(formData),
+      });
 
       const data = await response.json();
 
