@@ -37,42 +37,33 @@ app.get('/', (req, res) => {
 });
 
 // Новый тестовый роут - получаем курсы валют из БД
-app.get(
-  'https://currency-exchange-app-zkkc.onrender.com/api/rates',
-  (req, res) => {
-    connection.query('SELECT * FROM currency_rates', (error, results) => {
-      if (error) {
-        console.error('Ошибка запроса:', error);
-        return res.status(500).json({ error: 'Ошибка базы данных' });
-      }
-      res.json(results); // отправляем курсы валют клиенту
-    });
-  }
-);
+app.get('/api/rates', (req, res) => {
+  connection.query('SELECT * FROM currency_rates', (error, results) => {
+    if (error) {
+      console.error('Ошибка запроса:', error);
+      return res.status(500).json({ error: 'Ошибка базы данных' });
+    }
+    res.json(results); // отправляем курсы валют клиенту
+  });
+});
 
 // connection импортирован
 
-app.get(
-  'https://currency-exchange-app-zkkc.onrender.com/api/rates',
-  (req, res) => {
-    connection.query(
-      'SELECT currency_code, rate FROM currency_rates ORDER BY date DESC',
-      (error, results) => {
-        if (error) {
-          console.error('Ошибка запроса курсов:', error);
-          return res.status(500).json({ error: 'Ошибка базы данных' });
-        }
-        console.log('📋 Курсы из БД:', results); // для диагностики
-        res.json(results);
+app.get('/api/rates', (req, res) => {
+  connection.query(
+    'SELECT currency_code, rate FROM currency_rates ORDER BY date DESC',
+    (error, results) => {
+      if (error) {
+        console.error('Ошибка запроса курсов:', error);
+        return res.status(500).json({ error: 'Ошибка базы данных' });
       }
-    );
-  }
-);
+      console.log('📋 Курсы из БД:', results); // для диагностики
+      res.json(results);
+    }
+  );
+});
 
-app.get(
-  'https://currency-exchange-app-zkkc.onrender.com/api/rates/:currency',
-  (req, res) => {}
-);
+app.get('/api/rates/:currency', (req, res) => {});
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
