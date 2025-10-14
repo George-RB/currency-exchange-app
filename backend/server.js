@@ -27,15 +27,9 @@ app.use(
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Routes
-app.use('https://currency-exchange-app-zkkc.onrender.com/api/auth', authRoutes);
-app.use(
-  'https://currency-exchange-app-zkkc.onrender.com/api/operator',
-  operatorRoutes
-);
-app.use(
-  'https://currency-exchange-app-zkkc.onrender.com/api/admin',
-  adminRoutes
-);
+app.use('/api/auth', authRoutes);
+app.use('/api/operator', operatorRoutes);
+app.use('/api/admin', adminRoutes);
 
 // для SPA роутинга
 app.get('/', (req, res) => {
