@@ -36,8 +36,6 @@ npm install
 npm start
 ```
 
-````
-
 Сервер запустится на http://localhost:3000
 
 ### 3. Запуск клиента
@@ -95,4 +93,6 @@ database/         # Структура БД
 Разработчик: Картавенко Георгий
 GitHub: https://github.com/George-RB/currency-exchange-app
 
-````
+```
+
+```
