@@ -92,7 +92,3 @@ database/         # Структура БД
 
 Разработчик: Картавенко Георгий
 GitHub: https://github.com/George-RB/currency-exchange-app
-
-```
-
-```
