@@ -1,5 +1,5 @@
 const simpleAuth = (req, res, next) => {
-  // Получаем логин и роль из заголовков (вместо сложного JWT)
+  // Получаем логин и роль из заголовков (вместо JWT)
   const userLogin = req.headers['x-user-login'];
   const userRole = req.headers['x-user-role'];
 
