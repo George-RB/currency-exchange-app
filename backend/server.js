@@ -10,18 +10,15 @@ const connection = require('./config/database');
 const app = express();
 
 app.use(express.json());
-// app.use(require('cors')());
-app.use(
-  require('cors')({
-    origin: [
-      'http://localhost:5173',
-      'https://currency-exchange-app-zkkc.onrender.com',
-      'http://localhost:3000',
-    ],
-    credentials: false,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  })
-);
+
+// ПРАВИЛЬНАЯ НАСТРОЙКА CORS
+const cors = require('cors');
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-user-login', 'x-user-role']
+}));
 
 // раздача статических файлов фронтенда
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -36,34 +33,42 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
-// Новый тестовый роут - получаем курсы валют из БД
-app.get('/api/rates', (req, res) => {
-  connection.query('SELECT * FROM currency_rates', (error, results) => {
-    if (error) {
-      console.error('Ошибка запроса:', error);
-      return res.status(500).json({ error: 'Ошибка базы данных' });
-    }
-    res.json(results); // отправляем курсы валют клиенту
-  });
-});
-
-// connection импортирован
-
+// ЕДИНСТВЕННЫЙ роут для получения курсов
 app.get('/api/rates', (req, res) => {
   connection.query(
-    'SELECT currency_code, rate FROM currency_rates ORDER BY date DESC',
+    'SELECT * FROM currency_rates ORDER BY date DESC',
     (error, results) => {
       if (error) {
         console.error('Ошибка запроса курсов:', error);
         return res.status(500).json({ error: 'Ошибка базы данных' });
       }
-      console.log('📋 Курсы из БД:', results); // для диагностики
+      console.log('📋 Курсы из БД:', results.length); // для диагностики
       res.json(results);
     }
   );
 });
 
-app.get('/api/rates/:currency', (req, res) => {});
+// Роут для получения курса конкретной валюты
+app.get('/api/rates/:currency', (req, res) => {
+  const currency = req.params.currency;
+  connection.query(
+    'SELECT * FROM currency_rates WHERE currency_code = ? ORDER BY date DESC',
+    [currency],
+    (error, results) => {
+      if (error) {
+        console.error('Ошибка запроса курса:', error);
+        return res.status(500).json({ error: 'Ошибка базы данных' });
+      }
+      res.json(results);
+    }
+  );
+});
+
+// Обработчик ошибок
+app.use((err, req, res, next) => {
+  console.error('💥 Глобальная ошибка:', err);
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+});
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
