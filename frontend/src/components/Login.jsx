@@ -22,6 +22,11 @@ const Login = ({ onLogin }) => {
       });
 
       const data = await response.json();
+if (data.success) {
+  localStorage.setItem('token', data.token);       // 👈 сохраняем токен
+  localStorage.setItem('user', JSON.stringify(data.user));
+  onLogin(data.user);
+}
 
       if (response.ok && data.success) {
         localStorage.setItem('user', JSON.stringify(data.user));
