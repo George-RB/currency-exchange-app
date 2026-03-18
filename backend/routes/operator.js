@@ -1,58 +1,47 @@
 const express = require('express');
-const { simpleAuth } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/jwtAuth');
+const roleAuth = require('../middleware/roleAuth'); // если сделаем отдельно, но пока можно встроить
 const connection = require('../config/database');
 const router = express.Router();
 
-router.post('/exchange', simpleAuth, async (req, res) => {
-  console.log('🟢 POST /exchange вызван');
-  console.log('📦 Тело запроса:', req.body);
+// 👇 Все роуты ниже требуют валидный JWT и роль operator
+router.use(verifyToken);
+router.use((req, res, next) => {
+if (req.user.role.toLowerCase() !== 'operator') {
+    return res.status(403).json({ error: 'Недостаточно прав' });
+  }
+  next();
+});
 
+// Обмен валют
+router.post('/exchange', async (req, res) => {
   const { fromCurrency, toCurrency, amount } = req.body;
-  const user = req.user;
+  const user = req.user; // 👈 теперь из токена
 
   try {
-    // Валидация
     if (!amount || amount <= 0) {
-      console.log('❌ Неверная сумма:', amount);
       return res.status(400).json({ error: 'Сумма должна быть положительной' });
     }
-    if (fromCurrency === toCurrency) {
-      console.log('❌ Одинаковые валюты:', fromCurrency, toCurrency);
-      return res.status(400).json({ error: 'Валюты должны быть разными' });
-    }
 
-    // Получаем курсы
-    console.log(`🔍 Получаем курс для ${fromCurrency}...`);
     const fromRate = await getCurrentRate(fromCurrency);
-    console.log(`🔍 Получаем курс для ${toCurrency}...`);
     const toRate = await getCurrentRate(toCurrency);
 
-    console.log('📊 Курсы из БД:', {
-      fromCurrency,
-      fromRate,
-      toCurrency,
-      toRate,
-    });
-
-    // Проверяем что курсы найдены
-    if (fromRate === null || toRate === null) {
-      console.error('❌ Курсы не найдены');
+    if (!fromRate || !toRate) {
       return res.status(400).json({ error: 'Курсы для валют не найдены' });
     }
 
-    // Расчет
     const result = (amount * fromRate) / toRate;
-    console.log(
-      '🧮 Расчет:',
-      `${amount} × ${fromRate} / ${toRate} = ${result}`
-    );
 
-    // Сохранение
     connection.query(
-      'INSERT INTO operations_log (user_id, action_description, datetime) VALUES ((SELECT id FROM users WHERE login = ?), ?, NOW())',
+      `INSERT INTO operations_log (user_id, action_description, datetime, amount, from_currency, to_currency, result_amount)
+       VALUES ((SELECT id FROM users WHERE login = ?), ?, NOW(), ?, ?, ?, ?)`,
       [
         user.login,
-        `Обмен ${amount} ${fromCurrency} -> ${result.toFixed(2)} ${toCurrency}`,
+        `Обмен ${amount} ${fromCurrency} → ${result.toFixed(2)} ${toCurrency}`,
+        amount,
+        fromCurrency,
+        toCurrency,
+        result,
       ],
       (error) => {
         if (error) {
@@ -60,7 +49,6 @@ router.post('/exchange', simpleAuth, async (req, res) => {
           return res.status(500).json({ error: 'Ошибка сохранения операции' });
         }
 
-        console.log('✅ Операция успешно сохранена');
         res.json({
           success: true,
           result: result.toFixed(2),
@@ -74,8 +62,8 @@ router.post('/exchange', simpleAuth, async (req, res) => {
   }
 });
 
-// GET запрос для получения истории операций
-router.get('/history', simpleAuth, (req, res) => {
+// История
+router.get('/history', (req, res) => {
   const user = req.user;
 
   connection.query(
@@ -90,33 +78,23 @@ router.get('/history', simpleAuth, (req, res) => {
         console.error('Ошибка загрузки истории:', error);
         return res.status(500).json({ error: 'Ошибка загрузки истории' });
       }
-
-      res.json({
-        success: true,
-        history: results,
-      });
+      res.json({ success: true, history: results });
     }
   );
 });
 
+// Вспомогательная функция
 const getCurrentRate = async (currencyCode) => {
   return new Promise((resolve, reject) => {
-    console.log(`🔍 Ищем курс для: ${currencyCode}`);
-
     connection.query(
-      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC, id DESC LIMIT 1',
+      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC LIMIT 1',
       [currencyCode],
       (error, results) => {
-        if (error) {
-          console.error(`❌ Ошибка БД для ${currencyCode}:`, error);
-          reject(error);
-          return;
-        }
-
-        console.log(`📊 Результат запроса для ${currencyCode}:`, results);
+        if (error) return reject(error);
         resolve(results[0] ? results[0].rate : null);
       }
     );
   });
 };
+
 module.exports = router;

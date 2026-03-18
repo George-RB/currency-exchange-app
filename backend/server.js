@@ -11,13 +11,13 @@ const app = express();
 
 app.use(express.json());
 
-// ПРАВИЛЬНАЯ НАСТРОЙКА CORS
+// НАСТРОЙКА CORS
 const cors = require('cors');
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-user-login', 'x-user-role']
+  allowedHeaders: ['Content-Type', 'x-user-login', 'x-user-role', 'Authorization'] 
 }));
 
 // раздача статических файлов фронтенда
