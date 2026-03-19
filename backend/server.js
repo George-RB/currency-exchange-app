@@ -11,6 +11,8 @@ const connection = require("./config/database");
 
 const { globalLimiter } = require("./middleware/rateLimiter");
 
+const rateScheduler = require("./services/rateScheduler");
+
 const app = express();
 const PORT = 3000;
 
@@ -38,6 +40,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/operator", operatorRoutes);
 app.use("/api/admin", adminRoutes);
 
+rateScheduler.start();
 // для SPA роутинга
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));

@@ -4,6 +4,8 @@ const roleAuth = require("../middleware/roleAuth");
 const connection = require("../config/database");
 const router = express.Router();
 
+const rateScheduler = require("../services/rateScheduler");
+
 // Все роуты ниже требуют токен и роль admin
 router.use(verifyToken);
 router.use(roleAuth("admin"));
@@ -11,7 +13,7 @@ router.use(roleAuth("admin"));
 // Установка курса
 router.post("/rates", async (req, res) => {
   const { currency, rate } = req.body;
-  const user = req.user; // теперь из JWT токена
+  const user = req.user;
 
   connection.query(
     "INSERT INTO currency_rates (currency_code, rate, date) VALUES (?, ?, CURDATE())",
@@ -81,7 +83,7 @@ router.post("/reset-rates", async (req, res) => {
   });
 });
 
-// Отчёты
+// ===== ПРОСТЫЕ ОТЧЁТЫ =====
 router.get("/reports", async (req, res) => {
   connection.query(
     `SELECT 
@@ -105,6 +107,92 @@ router.get("/reports", async (req, res) => {
       res.json({ success: true, reports: formattedReports });
     },
   );
+});
+
+// ===== НОВЫЙ РОУТ: ПОЛНЫЕ ОТЧЁТЫ С ФИЛЬТРАМИ =====
+router.get("/reports/full", async (req, res) => {
+  const { startDate, endDate, currency } = req.query;
+
+  let sql = `
+    SELECT 
+      DATE(datetime) as date,
+      from_currency,
+      to_currency,
+      COUNT(*) as operations_count,
+      COALESCE(SUM(amount), 0) as total_amount_from,
+      COALESCE(SUM(result_amount), 0) as total_amount_to,
+      COALESCE(AVG(result_amount / amount), 0) as avg_rate
+    FROM operations_log 
+    WHERE action_description LIKE 'Обмен%'
+  `;
+
+  const params = [];
+
+  if (startDate) {
+    sql += " AND DATE(datetime) >= ?";
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    sql += " AND DATE(datetime) <= ?";
+    params.push(endDate);
+  }
+
+  if (currency) {
+    sql += " AND (from_currency = ? OR to_currency = ?)";
+    params.push(currency, currency);
+  }
+
+  sql += ` GROUP BY DATE(datetime), from_currency, to_currency 
+           ORDER BY date DESC, from_currency`;
+
+  connection.query(sql, params, (error, results) => {
+    if (error) {
+      console.error("Ошибка отчётов:", error);
+      return res.status(500).json({ error: "Ошибка загрузки отчётов" });
+    }
+
+    // Общие итоги за период
+    const totals = {
+      total_operations: results.reduce((sum, r) => sum + r.operations_count, 0),
+      total_amount_from: results.reduce(
+        (sum, r) => sum + parseFloat(r.total_amount_from || 0),
+        0,
+      ),
+      total_amount_to: results.reduce(
+        (sum, r) => sum + parseFloat(r.total_amount_to || 0),
+        0,
+      ),
+    };
+
+    res.json({
+      success: true,
+      reports: results,
+      totals,
+    });
+  });
+});
+
+// ===== СИНХРОНИЗАЦИЯ С НАЦБАНКОМ =====
+router.post("/sync-nbrb", async (req, res) => {
+  try {
+    const result = await rateScheduler.manualUpdate();
+
+    if (result) {
+      res.json({
+        success: true,
+        message: "Курсы успешно синхронизированы с Нацбанком",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Не удалось получить данные от Нацбанка",
+      });
+    }
+  } catch (error) {
+    console.error("Ошибка синхронизации:", error);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
 module.exports = router;
