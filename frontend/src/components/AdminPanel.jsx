@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import STYLES from '../styles/AdminPanel.module.css';
+import React, { useState, useEffect } from "react";
+import STYLES from "../styles/AdminPanel.module.css";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const AdminPanel = () => {
   const [rateForm, setRateForm] = useState({
-    currency: 'USD',
-    rate: '',
+    currency: "USD",
+    rate: "",
   });
   const [currentRates, setCurrentRates] = useState({});
   const [loading, setLoading] = useState(false);
+  const [reports, setReports] = useState([]);
 
   // Загружаем текущие курсы при монтировании
   useEffect(() => {
@@ -17,46 +18,66 @@ const AdminPanel = () => {
     loadReports();
   }, []);
 
+  // ===== ЗАГРУЗКА ТЕКУЩИХ КУРСОВ =====
   const loadCurrentRates = async () => {
     try {
-      console.log('🟡 Начинаем загрузку курсов...');
-      const response = await fetch(`${API_URL}/api/rates`);
+      console.log("🟡 Начинаем загрузку курсов...");
+      const response = await fetch(`${API_URL}/api/rates`, {
+        credentials: "include", // 👈 добавил
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-      console.log('📡 Статус ответа:', response.status);
-      console.log('📡 Response ok:', response.ok);
+      console.log("📡 Статус ответа:", response.status);
+      console.log("📡 Response ok:", response.ok);
 
       if (!response.ok) {
         throw new Error(`Ошибка HTTP: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('📊 Полученные данные:', data);
+      console.log("📊 Полученные данные:", data);
 
       const rates = {};
       data.forEach((rate) => {
         rates[rate.currency_code] = rate.rate;
       });
 
-      console.log('🟢 Преобразованные курсы:', rates);
+      console.log("🟢 Преобразованные курсы:", rates);
       setCurrentRates(rates);
     } catch (error) {
-      console.error('🔴 Ошибка загрузки курсов:', error);
-      // Можно добавить уведомление для пользователя
+      console.error("🔴 Ошибка загрузки курсов:", error);
     }
   };
+
+  // ===== ЗАГРУЗКА ОТЧЁТОВ =====
+  const loadReports = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/reports`, {
+        credentials: "include", // 👈 добавил
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (data.success) setReports(data.reports);
+    } catch (error) {
+      console.error("Ошибка загрузки отчётов:", error);
+    }
+  };
+
+  // ===== УСТАНОВКА КУРСА =====
   const handleSetRate = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const user = JSON.parse(localStorage.getItem('user'));
-
     try {
       const response = await fetch(`${API_URL}/api/admin/rates`, {
-        method: 'POST',
+        method: "POST",
+        credentials: "include", // 👈 добавил
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-login': user.login,
-          'x-user-role': user.role,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(rateForm),
       });
@@ -64,36 +85,36 @@ const AdminPanel = () => {
       const data = await response.json();
       if (data.success) {
         alert(data.message);
-        setRateForm({ ...rateForm, rate: '' });
+        setRateForm({ ...rateForm, rate: "" });
         loadCurrentRates(); // Обновляем список курсов
+        loadReports(); // Обновляем отчёты
       }
     } catch (error) {
-      console.error('Ошибка:', error);
-      alert('Ошибка установки курса');
+      console.error("Ошибка:", error);
+      alert("Ошибка установки курса");
     } finally {
       setLoading(false);
     }
   };
 
+  // ===== СБРОС КУРСОВ =====
   const handleResetRates = async () => {
     if (
       !window.confirm(
-        'Вы уверены, что хотите сбросить все курсы к начальным значениям?'
+        "Вы уверены, что хотите сбросить все курсы к начальным значениям?",
       )
     ) {
       return;
     }
 
     setLoading(true);
-    const user = JSON.parse(localStorage.getItem('user'));
 
     try {
       const response = await fetch(`${API_URL}/api/admin/reset-rates`, {
-        method: 'POST',
+        method: "POST",
+        credentials: "include", // 👈 добавил
         headers: {
-          'Content-Type': 'application/json',
-          'x-user-login': user.login,
-          'x-user-role': user.role,
+          "Content-Type": "application/json",
         },
       });
 
@@ -101,25 +122,33 @@ const AdminPanel = () => {
       if (data.success) {
         alert(data.message);
         loadCurrentRates(); // Обновляем список курсов
+        loadReports(); // Обновляем отчёты
       }
     } catch (error) {
-      console.error('Ошибка:', error);
-      alert('Ошибка сброса курсов');
+      console.error("Ошибка:", error);
+      alert("Ошибка сброса курсов");
     } finally {
       setLoading(false);
     }
   };
 
-  const [reports, setReports] = useState([]);
+  const getOperationWord = (count) => {
+    const num = Math.abs(count) % 100;
+    const num1 = num % 10;
 
-  const loadReports = async () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const response = await fetch(`${API_URL}/api/admin/reports`, {
-      headers: { 'x-user-login': user.login, 'x-user-role': user.role },
-    });
-    const data = await response.json();
-    if (data.success) setReports(data.reports);
+    if (num > 10 && num < 20) {
+      return `${count} операций`;
+    }
+    if (num1 > 1 && num1 < 5) {
+      return `${count} операции`;
+    }
+    if (num1 === 1) {
+      return `${count} операция`;
+    }
+    return `${count} операций`;
   };
+
+  const currencies = ["USD", "EUR", "BYN", "RUB", "PLN"];
 
   return (
     <div className={STYLES.adminContainer}>
@@ -137,9 +166,11 @@ const AdminPanel = () => {
               }
               className={STYLES.select}
             >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="BYN">BYN</option>
+              {currencies.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -163,7 +194,7 @@ const AdminPanel = () => {
             disabled={loading}
             className={STYLES.submitButton}
           >
-            {loading ? 'Сохранение...' : 'Установить курс'}
+            {loading ? "Сохранение..." : "Установить курс"}
           </button>
         </div>
       </form>
@@ -177,33 +208,32 @@ const AdminPanel = () => {
           disabled={loading}
           className={STYLES.resetButton}
         >
-          {loading ? 'Сброс...' : 'Сбросить все курсы'}
+          {loading ? "Сброс..." : "Сбросить все курсы"}
         </button>
 
         {/* Текущие курсы */}
         <div className={STYLES.currentRates}>
           <h4 className={STYLES.ratesTitle}>Текущие курсы:</h4>
-          <div className={STYLES.rateItem}>
-            <span>USD:</span>
-            <span>{currentRates.USD || 'не установлен'}</span>
-          </div>
-          <div className={STYLES.rateItem}>
-            <span>EUR:</span>
-            <span>{currentRates.EUR || 'не установлен'}</span>
-          </div>
-          <div className={STYLES.rateItem}>
-            <span>BYN:</span>
-            <span>{currentRates.BYN || 'не установлен'}</span>
-          </div>
-        </div>
-
-        <div className={STYLES.reportsSection}>
-          <h3>Отчеты по обменам</h3>
-          {reports.map((report) => (
-            <div key={report.date}>
-              {report.date}: {report.operations_count} операций
+          {currencies.map((currency) => (
+            <div key={currency} className={STYLES.rateItem}>
+              <span>{currency}:</span>
+              <span>{currentRates[currency] || "не установлен"}</span>
             </div>
           ))}
+        </div>
+
+        {/* Отчёты */}
+        <div className={STYLES.reportsSection}>
+          <h3>Отчеты по обменам</h3>
+          {reports.length === 0 ? (
+            <p>Нет данных</p>
+          ) : (
+            reports.map((report) => (
+              <div key={report.date} className={STYLES.reportItem}>
+                {report.date}: {getOperationWord(report.operations_count)}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

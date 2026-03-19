@@ -1,73 +1,79 @@
-const express = require('express');
-const authRoutes = require('./routes/auth').router;
-const operatorRoutes = require('./routes/operator');
-const adminRoutes = require('./routes/admin');
-const path = require('path');
-require('dotenv').config();
-const PORT = 3000;
-const connection = require('./config/database');
+const express = require("express");
+const cookieParser = require("cookie-parser"); // 👈 ПОДНЯЛ ВВЕРХ!
+const cors = require("cors"); // 👈 ПОДНЯЛ ВВЕРХ!
+const path = require("path");
+require("dotenv").config();
+
+const authRoutes = require("./routes/auth").router;
+const operatorRoutes = require("./routes/operator");
+const adminRoutes = require("./routes/admin");
+const connection = require("./config/database");
 
 const app = express();
+const PORT = 3000;
 
+// 👇 ВАЖНЫЙ ПОРЯДОК: сначала парсеры
 app.use(express.json());
+app.use(cookieParser()); // теперь работает
 
-// НАСТРОЙКА CORS
-const cors = require('cors');
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-user-login', 'x-user-role', 'Authorization'] 
-}));
+// 👇 CORS строго для фронтенда
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  }),
+);
 
 // раздача статических файлов фронтенда
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/operator', operatorRoutes);
-app.use('/api/admin', adminRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/operator", operatorRoutes);
+app.use("/api/admin", adminRoutes);
 
 // для SPA роутинга
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 // ЕДИНСТВЕННЫЙ роут для получения курсов
-app.get('/api/rates', (req, res) => {
+app.get("/api/rates", (req, res) => {
   connection.query(
-    'SELECT * FROM currency_rates ORDER BY date DESC',
+    "SELECT * FROM currency_rates ORDER BY date DESC",
     (error, results) => {
       if (error) {
-        console.error('Ошибка запроса курсов:', error);
-        return res.status(500).json({ error: 'Ошибка базы данных' });
+        console.error("Ошибка запроса курсов:", error);
+        return res.status(500).json({ error: "Ошибка базы данных" });
       }
-      console.log('📋 Курсы из БД:', results.length); // для диагностики
+      console.log("📋 Курсы из БД:", results.length);
       res.json(results);
-    }
+    },
   );
 });
 
 // Роут для получения курса конкретной валюты
-app.get('/api/rates/:currency', (req, res) => {
+app.get("/api/rates/:currency", (req, res) => {
   const currency = req.params.currency;
   connection.query(
-    'SELECT * FROM currency_rates WHERE currency_code = ? ORDER BY date DESC',
+    "SELECT * FROM currency_rates WHERE currency_code = ? ORDER BY date DESC",
     [currency],
     (error, results) => {
       if (error) {
-        console.error('Ошибка запроса курса:', error);
-        return res.status(500).json({ error: 'Ошибка базы данных' });
+        console.error("Ошибка запроса курса:", error);
+        return res.status(500).json({ error: "Ошибка базы данных" });
       }
       res.json(results);
-    }
+    },
   );
 });
 
 // Обработчик ошибок
 app.use((err, req, res, next) => {
-  console.error('💥 Глобальная ошибка:', err);
-  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  console.error("💥 Глобальная ошибка:", err);
+  res.status(500).json({ error: "Внутренняя ошибка сервера" });
 });
 
 app.listen(PORT, () => {

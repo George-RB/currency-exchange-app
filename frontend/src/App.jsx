@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import Login from './components/Login';
-import AdminPanel from './components/AdminPanel';
-import OperatorPanel from './components/OperatorPanel';
-import STYLES from './styles/App.module.css';
+import React, { useState, useEffect } from "react";
+import Login from "./components/Login";
+import AdminPanel from "./components/AdminPanel";
+import OperatorPanel from "./components/OperatorPanel";
+import STYLES from "./styles/App.module.css";
 
 function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     // Проверяем, есть ли сохраненный пользователь
-    const savedUser = localStorage.getItem('user');
+    const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -19,9 +19,15 @@ function App() {
     setUser(userData);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const handleLogout = async () => {
+    await fetch(`${API_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    localStorage.removeItem("user");
     setUser(null);
   };
 
@@ -40,8 +46,8 @@ function App() {
         </button>
       </header>
 
-      {user.role === 'admin' && <AdminPanel />}
-      {user.role === 'operator' && <OperatorPanel />}
+      {user.role === "admin" && <AdminPanel />}
+      {user.role === "operator" && <OperatorPanel />}
     </div>
   );
 }

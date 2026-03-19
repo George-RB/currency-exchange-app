@@ -83,6 +83,49 @@ router.get('/history', (req, res) => {
   );
 });
 
+// ===========================================
+// ПОЛУЧИТЬ ИСТОРИЮ КУРСОВ (на все даты)
+// ===========================================
+router.get('/rates-history', verifyToken, (req, res) => {
+  const { currency, startDate, endDate } = req.query;
+  
+  let sql = `
+    SELECT currency_code, rate, DATE_FORMAT(date, '%Y-%m-%d') as date
+    FROM currency_rates 
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (currency) {
+    sql += ' AND currency_code = ?';
+    params.push(currency);
+  }
+
+  if (startDate) {
+    sql += ' AND date >= ?';
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    sql += ' AND date <= ?';
+    params.push(endDate);
+  }
+
+  sql += ' ORDER BY date DESC, currency_code';
+
+  connection.query(sql, params, (error, results) => {
+    if (error) {
+      console.error('❌ Ошибка истории курсов:', error);
+      return res.status(500).json({ error: 'Ошибка загрузки истории' });
+    }
+
+    res.json({
+      success: true,
+      history: results
+    });
+  });
+});
+
 // Вспомогательная функция
 const getCurrentRate = async (currencyCode) => {
   return new Promise((resolve, reject) => {

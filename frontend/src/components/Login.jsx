@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import STYLES from '../styles/Login.module.css';
+import React, { useState } from "react";
+import STYLES from "../styles/Login.module.css";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
-    login: '',
-    password: '',
+    login: "",
+    password: "",
   });
 
   const handleSubmit = async (e) => {
@@ -14,29 +14,25 @@ const Login = ({ onLogin }) => {
 
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
+        method: "POST",
+        credentials: "include", // 👈 ЭТО КЛЮЧЕВОЕ!
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
-if (data.success) {
-  localStorage.setItem('token', data.token);       // 👈 сохраняем токен
-  localStorage.setItem('user', JSON.stringify(data.user));
-  onLogin(data.user);
-}
 
-      if (response.ok && data.success) {
-        localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.success) {
+        localStorage.setItem("user", JSON.stringify(data.user));
         onLogin(data.user);
       } else {
-        alert(data.error || 'Ошибка входа');
+        alert(data.error || "Ошибка входа");
       }
     } catch (error) {
-      console.error('Ошибка:', error);
-      alert('Ошибка соединения');
+      console.error("Ошибка:", error);
+      alert("Ошибка соединения");
     }
   };
 

@@ -59,6 +59,12 @@ CREATE TABLE operations_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Лог действий пользователей';
 
 -- =====================================================
+-- Дополнительные индексы для ускорения отчетов -- NEW
+-- =====================================================
+CREATE INDEX idx_reports_date ON operations_log (datetime);
+CREATE INDEX idx_reports_currencies ON operations_log (from_currency, to_currency);
+
+-- =====================================================
 -- Таблица для хранения сессий
 -- =====================================================
 DROP TABLE IF EXISTS sessions;
@@ -89,10 +95,10 @@ INSERT INTO currency_rates (currency_code, rate, date) VALUES
 ('USD', 2.5000, CURDATE()),
 ('EUR', 3.0000, CURDATE()),
 ('BYN', 1.0000, CURDATE()),
-('RUB', 0.0333, CURDATE()),  -- 100 RUB = 3.33 BYN (примерно)
-('PLN', 0.6000, CURDATE());   -- 1 PLN = 0.60 BYN (примерно)
+('RUB', 0.0333, CURDATE()),
+('PLN', 0.6000, CURDATE());
 
--- Добавляем исторические курсы для теста (за последние 7 дней)
+-- Добавляем исторические курсы для теста
 INSERT INTO currency_rates (currency_code, rate, date) VALUES
 ('USD', 2.4800, DATE_SUB(CURDATE(), INTERVAL 1 DAY)),
 ('EUR', 2.9500, DATE_SUB(CURDATE(), INTERVAL 1 DAY)),
@@ -105,7 +111,7 @@ INSERT INTO currency_rates (currency_code, rate, date) VALUES
 ('USD', 2.4000, DATE_SUB(CURDATE(), INTERVAL 5 DAY)),
 ('EUR', 2.8600, DATE_SUB(CURDATE(), INTERVAL 5 DAY));
 
--- Добавляем тестовые операции (для отчетов)
+-- Добавляем тестовые операции
 INSERT INTO operations_log (user_id, action_description, datetime, amount, from_currency, to_currency, result_amount, session_id, ip_address)
 VALUES
 (2, 'Обмен 100 USD -> 250.00 BYN', NOW() - INTERVAL 1 HOUR, 100, 'USD', 'BYN', 250.00, 'test_session_1', '127.0.0.1'),
@@ -115,11 +121,21 @@ VALUES
 (1, 'Установлен курс USD = 2.5000', NOW() - INTERVAL 1 DAY, NULL, NULL, NULL, NULL, NULL, '127.0.0.1'),
 (1, 'Сброс всех курсов к начальным значениям', NOW() - INTERVAL 3 DAY, NULL, NULL, NULL, NULL, NULL, '127.0.0.1');
 
+-- Дополнительные тестовые операции для разных валютных пар -- NEW
+INSERT INTO operations_log (user_id, action_description, datetime, amount, from_currency, to_currency, result_amount, session_id, ip_address)
+VALUES
+(2, 'Обмен 500 USD -> 450.00 EUR', NOW() - INTERVAL 3 DAY, 500, 'USD', 'EUR', 450.00, 'test_session_4', '127.0.0.1'),
+(2, 'Обмен 200 USD -> 180.00 EUR', NOW() - INTERVAL 4 DAY, 200, 'USD', 'EUR', 180.00, 'test_session_4', '127.0.0.1'),
+(2, 'Обмен 300 EUR -> 330.00 USD', NOW() - INTERVAL 5 DAY, 300, 'EUR', 'USD', 330.00, 'test_session_5', '127.0.0.1'),
+(2, 'Обмен 1000 PLN -> 600.00 BYN', NOW() - INTERVAL 2 DAY, 1000, 'PLN', 'BYN', 600.00, 'test_session_6', '127.0.0.1'),
+(2, 'Обмен 500 PLN -> 300.00 BYN', NOW() - INTERVAL 3 DAY, 500, 'PLN', 'BYN', 300.00, 'test_session_6', '127.0.0.1'),
+(2, 'Обмен 5000 RUB -> 166.50 BYN', NOW() - INTERVAL 1 DAY, 5000, 'RUB', 'BYN', 166.50, 'test_session_7', '127.0.0.1');
+
 -- =====================================================
 -- Создание представлений (VIEW) для удобства
 -- =====================================================
 
--- Представление для оператора: история операций с деталями
+-- Представление для оператора
 CREATE OR REPLACE VIEW v_operator_history AS
 SELECT 
     ol.datetime,
@@ -135,7 +151,7 @@ JOIN users u ON ol.user_id = u.id
 WHERE ol.action_description LIKE 'Обмен%'
 ORDER BY ol.datetime DESC;
 
--- Представление для админа: отчет по операциям
+-- Представление для админа (уже готово для полных отчетов!) -- NEW
 CREATE OR REPLACE VIEW v_admin_report AS
 SELECT 
     DATE(ol.datetime) as operation_date,
@@ -153,7 +169,6 @@ GROUP BY DATE(ol.datetime), ol.from_currency, ol.to_currency;
 -- Создание триггеров 
 -- =====================================================
 
--- Триггер для автоматического логирования изменений курсов
 DELIMITER //
 CREATE TRIGGER after_currency_rate_insert
 AFTER INSERT ON currency_rates
@@ -163,6 +178,18 @@ BEGIN
     VALUES (1, CONCAT('Автоматическое обновление курса ', NEW.currency_code, ' = ', NEW.rate, ' на ', NEW.date), NOW(), 'system');
 END//
 DELIMITER ;
+
+-- =====================================================
+-- Проверка структуры для отчетов -- NEW
+-- =====================================================
+SELECT 'Проверка структуры для отчетов:' as 'Check';
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'operations_log' 
+AND COLUMN_NAME IN ('amount', 'from_currency', 'to_currency', 'result_amount', 'datetime');
 
 -- =====================================================
 -- Информация о БД
