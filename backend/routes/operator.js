@@ -1,33 +1,34 @@
-const express = require('express');
-const { verifyToken } = require('../middleware/jwtAuth');
-const roleAuth = require('../middleware/roleAuth'); // если сделаем отдельно, но пока можно встроить
-const connection = require('../config/database');
+const express = require("express");
+const { verifyToken } = require("../middleware/jwtAuth");
+const roleAuth = require("../middleware/roleAuth"); // если сделаем отдельно, но пока можно встроить
+const connection = require("../config/database");
 const router = express.Router();
+const { exchangeLimiter } = require("../middleware/rateLimiter");
 
-// 👇 Все роуты ниже требуют валидный JWT и роль operator
+// Все роуты ниже требуют валидный JWT и роль operator
 router.use(verifyToken);
 router.use((req, res, next) => {
-if (req.user.role.toLowerCase() !== 'operator') {
-    return res.status(403).json({ error: 'Недостаточно прав' });
+  if (req.user.role.toLowerCase() !== "operator") {
+    return res.status(403).json({ error: "Недостаточно прав" });
   }
   next();
 });
 
 // Обмен валют
-router.post('/exchange', async (req, res) => {
+router.post("/exchange", exchangeLimiter, verifyToken, async (req, res) => {
   const { fromCurrency, toCurrency, amount } = req.body;
-  const user = req.user; // 👈 теперь из токена
+  const user = req.user; // теперь из токена
 
   try {
     if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Сумма должна быть положительной' });
+      return res.status(400).json({ error: "Сумма должна быть положительной" });
     }
 
     const fromRate = await getCurrentRate(fromCurrency);
     const toRate = await getCurrentRate(toCurrency);
 
     if (!fromRate || !toRate) {
-      return res.status(400).json({ error: 'Курсы для валют не найдены' });
+      return res.status(400).json({ error: "Курсы для валют не найдены" });
     }
 
     const result = (amount * fromRate) / toRate;
@@ -45,8 +46,8 @@ router.post('/exchange', async (req, res) => {
       ],
       (error) => {
         if (error) {
-          console.error('❌ Ошибка сохранения:', error);
-          return res.status(500).json({ error: 'Ошибка сохранения операции' });
+          console.error("❌ Ошибка сохранения:", error);
+          return res.status(500).json({ error: "Ошибка сохранения операции" });
         }
 
         res.json({
@@ -54,16 +55,16 @@ router.post('/exchange', async (req, res) => {
           result: result.toFixed(2),
           rate: (fromRate / toRate).toFixed(4),
         });
-      }
+      },
     );
   } catch (error) {
-    console.error('💥 Ошибка при обмене:', error);
-    res.status(500).json({ error: 'Ошибка сервера' });
+    console.error("Ошибка при обмене:", error);
+    res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 
 // История
-router.get('/history', (req, res) => {
+router.get("/history", (req, res) => {
   const user = req.user;
 
   connection.query(
@@ -75,20 +76,20 @@ router.get('/history', (req, res) => {
     [user.login],
     (error, results) => {
       if (error) {
-        console.error('Ошибка загрузки истории:', error);
-        return res.status(500).json({ error: 'Ошибка загрузки истории' });
+        console.error("Ошибка загрузки истории:", error);
+        return res.status(500).json({ error: "Ошибка загрузки истории" });
       }
       res.json({ success: true, history: results });
-    }
+    },
   );
 });
 
 // ===========================================
 // ПОЛУЧИТЬ ИСТОРИЮ КУРСОВ (на все даты)
 // ===========================================
-router.get('/rates-history', verifyToken, (req, res) => {
+router.get("/rates-history", verifyToken, (req, res) => {
   const { currency, startDate, endDate } = req.query;
-  
+
   let sql = `
     SELECT currency_code, rate, DATE_FORMAT(date, '%Y-%m-%d') as date
     FROM currency_rates 
@@ -97,31 +98,31 @@ router.get('/rates-history', verifyToken, (req, res) => {
   const params = [];
 
   if (currency) {
-    sql += ' AND currency_code = ?';
+    sql += " AND currency_code = ?";
     params.push(currency);
   }
 
   if (startDate) {
-    sql += ' AND date >= ?';
+    sql += " AND date >= ?";
     params.push(startDate);
   }
 
   if (endDate) {
-    sql += ' AND date <= ?';
+    sql += " AND date <= ?";
     params.push(endDate);
   }
 
-  sql += ' ORDER BY date DESC, currency_code';
+  sql += " ORDER BY date DESC, currency_code";
 
   connection.query(sql, params, (error, results) => {
     if (error) {
-      console.error('❌ Ошибка истории курсов:', error);
-      return res.status(500).json({ error: 'Ошибка загрузки истории' });
+      console.error("❌ Ошибка истории курсов:", error);
+      return res.status(500).json({ error: "Ошибка загрузки истории" });
     }
 
     res.json({
       success: true,
-      history: results
+      history: results,
     });
   });
 });
@@ -130,12 +131,12 @@ router.get('/rates-history', verifyToken, (req, res) => {
 const getCurrentRate = async (currencyCode) => {
   return new Promise((resolve, reject) => {
     connection.query(
-      'SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC LIMIT 1',
+      "SELECT rate FROM currency_rates WHERE currency_code = ? ORDER BY date DESC LIMIT 1",
       [currencyCode],
       (error, results) => {
         if (error) return reject(error);
         resolve(results[0] ? results[0].rate : null);
-      }
+      },
     );
   });
 };

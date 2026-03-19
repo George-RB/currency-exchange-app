@@ -3,8 +3,9 @@ const bcrypt = require("bcryptjs");
 const connection = require("../config/database");
 const { generateToken } = require("../middleware/jwtAuth");
 const router = express.Router();
+const { authLimiter } = require("../middleware/rateLimiter");
 
-router.post("/login", (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const { login, password } = req.body;
 

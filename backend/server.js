@@ -9,14 +9,18 @@ const operatorRoutes = require("./routes/operator");
 const adminRoutes = require("./routes/admin");
 const connection = require("./config/database");
 
+const { globalLimiter } = require("./middleware/rateLimiter");
+
 const app = express();
 const PORT = 3000;
 
-// 👇 ВАЖНЫЙ ПОРЯДОК: сначала парсеры
+// сначала парсеры
+// Rate limiting для всех API
+app.use("/api", globalLimiter);
 app.use(express.json());
-app.use(cookieParser()); // теперь работает
+app.use(cookieParser());
 
-// 👇 CORS строго для фронтенда
+// CORS для фронтенда
 app.use(
   cors({
     origin: "http://localhost:5173",
