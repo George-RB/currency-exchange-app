@@ -8,6 +8,14 @@ CREATE DATABASE IF NOT EXISTS currency_exchange;
 USE currency_exchange;
 
 -- =====================================================
+-- Удаляем таблицы в правильном порядке (сначала зависимые)
+-- =====================================================
+DROP TABLE IF EXISTS operations_log;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS currency_rates;
+DROP TABLE IF EXISTS users;
+
+-- =====================================================
 -- Таблица пользователей
 -- =====================================================
 DROP TABLE IF EXISTS users;
@@ -41,22 +49,23 @@ CREATE TABLE currency_rates (
 DROP TABLE IF EXISTS operations_log;
 CREATE TABLE operations_log (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL COMMENT 'ID пользователя',
-    action_description TEXT NOT NULL COMMENT 'Описание действия',
-    datetime DATETIME NOT NULL COMMENT 'Дата и время',
-    amount DECIMAL(10, 2) DEFAULT NULL COMMENT 'Сумма обмена',
-    from_currency VARCHAR(3) DEFAULT NULL COMMENT 'Из какой валюты',
-    to_currency VARCHAR(3) DEFAULT NULL COMMENT 'В какую валюту',
-    result_amount DECIMAL(10, 2) DEFAULT NULL COMMENT 'Результат обмена',
-    session_id VARCHAR(100) DEFAULT NULL COMMENT 'ID сессии',
-    ip_address VARCHAR(45) DEFAULT NULL COMMENT 'IP адрес',
+    user_id INT NOT NULL,
+    action_description TEXT NOT NULL,
+    operation_type ENUM('exchange', 'rate_set', 'reset', 'login', 'logout', 'cash') DEFAULT NULL COMMENT 'Тип операции',
+    datetime DATETIME NOT NULL,
+    amount DECIMAL(10,2) DEFAULT NULL,
+    from_currency VARCHAR(3) DEFAULT NULL,
+    to_currency VARCHAR(3) DEFAULT NULL,
+    result_amount DECIMAL(10,2) DEFAULT NULL,
+    session_id VARCHAR(100) DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_datetime (datetime),
     INDEX idx_user_date (user_id, datetime),
-    INDEX idx_session (session_id),
-    INDEX idx_currencies (from_currency, to_currency)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Лог действий пользователей';
+    INDEX idx_currencies (from_currency, to_currency),
+    INDEX idx_operation_type (operation_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = 'Лог действий пользователей';
 
 -- =====================================================
 -- Дополнительные индексы для ускорения отчетов 
@@ -70,7 +79,7 @@ CREATE INDEX idx_reports_currencies ON operations_log (from_currency, to_currenc
 DROP TABLE IF EXISTS sessions;
 CREATE TABLE sessions (
     session_id VARCHAR(100) PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT NULL COMMENT 'ID пользователя',
     login_time DATETIME NOT NULL,
     logout_time DATETIME DEFAULT NULL,
     ip_address VARCHAR(45),
@@ -78,6 +87,45 @@ CREATE TABLE sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_sessions (user_id, login_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- Таблица кассы
+-- =====================================================
+CREATE TABLE cash_register (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    currency_code VARCHAR(3) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_currency (currency_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = 'Остатки валют в кассе';
+
+
+-- =====================================================
+-- Начальные остатки в кассе
+-- =====================================================
+INSERT INTO cash_register (currency_code, amount) VALUES
+('USD', 10000.00),
+('EUR', 10000.00),
+('BYN', 50000.00),
+('RUB', 1000000.00),
+('PLN', 50000.00)
+ON DUPLICATE KEY UPDATE amount = amount;
+
+
+-- =====================================================
+-- Представление для отчётов по кассе
+-- =====================================================
+CREATE OR REPLACE VIEW v_cash_operations AS
+SELECT 
+    ol.datetime,
+    u.login as admin,
+    ol.action_description,
+    ol.operation_type,
+    ol.ip_address
+FROM operations_log ol
+JOIN users u ON ol.user_id = u.id
+WHERE ol.operation_type = 'cash'
+ORDER BY ol.datetime DESC;
 
 -- =====================================================
 -- Добавление начальных данных

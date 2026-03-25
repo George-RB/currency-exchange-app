@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import STYLES from "../styles/AdminPanel.module.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -26,6 +26,91 @@ const AdminPanel = () => {
   });
 
   const [syncing, setSyncing] = useState(false);
+
+  const [cashModal, setCashModal] = useState({
+    show: false,
+    currency: "",
+    type: "",
+    amount: "",
+  });
+
+  // ===== ЗАГРУЗКА КАССЫ =====
+  const loadCash = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/cash`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCashData(data.cash);
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки кассы:", error);
+    }
+  };
+
+  // ===== МОДАЛЬНОЕ ОКНО КАССЫ =====
+  const openCashModal = (currency, type) => {
+    setCashModal({ show: true, currency, type, amount: "" });
+  };
+
+  const closeCashModal = () => {
+    setCashModal({ show: false, currency: "", type: "", amount: "" });
+  };
+
+  const handleCashSubmit = async () => {
+    const endpoint = cashModal.type === "add" ? "/cash/add" : "/cash/remove";
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin${endpoint}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currency_code: cashModal.currency,
+          amount: parseFloat(cashModal.amount),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message);
+        loadCash(); // обновляем кассу
+        closeCashModal();
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      console.error("Ошибка:", error);
+      alert("Ошибка операции с кассой");
+    }
+  };
+
+  const [logs, setLogs] = useState([]);
+  const [logFilter, setLogFilter] = useState("all");
+
+  // ===== ЗАГРУЗКА ЖУРНАЛА ДЕЙСТВИЙ =====
+  const loadLogs = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/admin/logs?type=${logFilter}`,
+        {
+          credentials: "include",
+        },
+      );
+      const data = await response.json();
+      if (data.success) {
+        setLogs(data.logs);
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки логов:", error);
+    }
+  }, [logFilter]); //  зависимость от logFilter
+
+  useEffect(() => {
+    loadLogs();
+  }, [logFilter, loadLogs]);
+
   // ===== СИНХРОНИЗАЦИЯ С НАЦБАНКОМ =====
   const syncWithNbrb = async () => {
     if (
@@ -63,7 +148,7 @@ const AdminPanel = () => {
 
   // ===== ЗАГРУЗКА ПОЛНЫХ ОТЧЁТОВ С ФИЛЬТРАМИ =====
 
-  const loadFullReports = async () => {
+  const loadFullReports = useCallback(async () => {
     try {
       let url = `${API_URL}/api/admin/reports/full?`;
       if (filters.startDate) url += `startDate=${filters.startDate}&`;
@@ -89,14 +174,16 @@ const AdminPanel = () => {
     } catch (error) {
       console.error("Ошибка загрузки полных отчётов:", error);
     }
-  };
+  }, [filters]);
 
   // Загружаем курсы и отчёты при монтировании
   useEffect(() => {
     loadCurrentRates();
     loadReports();
     loadFullReports();
-  }, []);
+    loadLogs();
+    loadCash(); // Загрузка курсов
+  }, [loadLogs]);
 
   // Загружаем полные отчёты при изменении фильтров
   useEffect(() => {
@@ -231,6 +318,16 @@ const AdminPanel = () => {
     }
   };
 
+  const [cashData, setCashData] = useState([]);
+
+  useEffect(() => {
+    loadCurrentRates();
+    loadReports();
+    loadFullReports();
+    loadLogs();
+    loadCash();
+  }, []);
+
   // ===== СКЛОНЕНИЕ СЛОВА "ОПЕРАЦИЯ" =====
   const getOperationWord = (count) => {
     const num = Math.abs(count) % 100;
@@ -325,11 +422,238 @@ const AdminPanel = () => {
             border: "none",
             borderRadius: "4px",
             cursor: "pointer",
-            marginLeft: "10px",
+            marginTop: "10px",
           }}
         >
           {syncing ? "Синхронизация..." : "🇧🇾 Синхронизировать с Нацбанком"}
         </button>
+
+        <div
+          style={{
+            marginTop: "40px",
+            borderTop: "2px solid #007bff",
+            paddingTop: "20px",
+          }}
+        >
+          <h2 style={{ color: "#007bff" }}>💰 Касса</h2>
+
+          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+            {cashData.map((item) => (
+              <div
+                key={item.currency_code}
+                style={{
+                  background: "#f8f9fa",
+                  padding: "15px",
+                  borderRadius: "8px",
+                  minWidth: "150px",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                  {item.currency_code}
+                </div>
+                <div style={{ fontSize: "20px", color: "#007bff" }}>
+                  {Number(item.amount).toFixed(2)}
+                </div>
+                <div style={{ marginTop: "10px" }}>
+                  <button
+                    onClick={() => openCashModal(item.currency_code, "add")}
+                  >
+                    ➕
+                  </button>
+                  <button
+                    onClick={() => openCashModal(item.currency_code, "remove")}
+                  >
+                    ➖
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {cashModal.show && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                background: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                minWidth: "300px",
+              }}
+            >
+              <h3>
+                {cashModal.type === "add"
+                  ? "Пополнение кассы"
+                  : "Изъятие из кассы"}
+              </h3>
+              <p>
+                Валюта: <strong>{cashModal.currency}</strong>
+              </p>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Сумма"
+                value={cashModal.amount}
+                onChange={(e) =>
+                  setCashModal({ ...cashModal, amount: e.target.value })
+                }
+                style={{ width: "100%", padding: "8px", margin: "10px 0" }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button onClick={closeCashModal}>Отмена</button>
+                <button onClick={handleCashSubmit}>Подтвердить</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== КАССА ===== */}
+        <div
+          style={{
+            marginTop: "40px",
+            borderTop: "2px solid #007bff",
+            paddingTop: "20px",
+          }}
+        >
+          <h2 style={{ color: "#007bff" }}>💰 Касса</h2>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "20px",
+              flexWrap: "wrap",
+              marginBottom: "20px",
+            }}
+          >
+            {cashData.map((item) => (
+              <div
+                key={item.currency_code}
+                style={{
+                  background: "#f8f9fa",
+                  padding: "15px",
+                  borderRadius: "8px",
+                  minWidth: "150px",
+                  textAlign: "center",
+                  border: "1px solid #dee2e6",
+                }}
+              >
+                <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                  {item.currency_code}
+                </div>
+                <div style={{ fontSize: "20px", color: "#007bff" }}>
+                  {Number(item.amount).toFixed(2)}
+                </div>
+                <div style={{ marginTop: "10px" }}>
+                  <button
+                    onClick={() => openCashModal(item.currency_code, "add")}
+                    style={{
+                      marginRight: "5px",
+                      padding: "5px 10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ➕ Пополнить
+                  </button>
+                  <button
+                    onClick={() => openCashModal(item.currency_code, "remove")}
+                    style={{ padding: "5px 10px", cursor: "pointer" }}
+                  >
+                    ➖ Изъять
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ===== МОДАЛЬНОЕ ОКНО КАССЫ ===== */}
+        {cashModal.show && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                background: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                minWidth: "300px",
+              }}
+            >
+              <h3>
+                {cashModal.type === "add"
+                  ? "Пополнение кассы"
+                  : "Изъятие из кассы"}
+              </h3>
+              <p>
+                Валюта: <strong>{cashModal.currency}</strong>
+              </p>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Сумма"
+                value={cashModal.amount}
+                onChange={(e) =>
+                  setCashModal({ ...cashModal, amount: e.target.value })
+                }
+                style={{ width: "100%", padding: "8px", margin: "10px 0" }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button
+                  onClick={closeCashModal}
+                  style={{ padding: "5px 15px" }}
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={handleCashSubmit}
+                  style={{
+                    padding: "5px 15px",
+                    background: "#007bff",
+                    color: "white",
+                  }}
+                >
+                  Подтвердить
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ===== ПРОСТЫЕ ОТЧЁТЫ ===== */}
         <div className={STYLES.reportsSection}>
@@ -601,6 +925,73 @@ const AdminPanel = () => {
             </div>
           </>
         )}
+
+        {/* ===== ЖУРНАЛ ДЕЙСТВИЙ ===== */}
+        <div
+          style={{
+            marginTop: "40px",
+            borderTop: "2px solid #007bff",
+            paddingTop: "20px",
+          }}
+        >
+          <h2 style={{ color: "#007bff" }}>📋 Журнал действий</h2>
+
+          <div style={{ marginBottom: "15px" }}>
+            <label>Фильтр по типу: </label>
+            <select
+              value={logFilter}
+              onChange={(e) => {
+                setLogFilter(e.target.value);
+                loadLogs();
+              }}
+              style={{ padding: "5px", marginLeft: "10px" }}
+            >
+              <option value="all">Все действия</option>
+              <option value="login">Входы</option>
+              <option value="logout">Выходы</option>
+              <option value="exchange">Обмены</option>
+              <option value="rate_set">Установка курсов</option>
+            </select>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "#007bff", color: "white" }}>
+                  <th style={{ padding: "8px" }}>Дата/время</th>
+                  <th style={{ padding: "8px" }}>Пользователь</th>
+                  <th style={{ padding: "8px" }}>Тип</th>
+                  <th style={{ padding: "8px" }}>Действие</th>
+                  <th style={{ padding: "8px" }}>IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => (
+                  <tr key={log.id} style={{ borderBottom: "1px solid #ddd" }}>
+                    <td style={{ padding: "8px" }}>
+                      {new Date(log.datetime).toLocaleString("ru-RU")}
+                    </td>
+                    <td style={{ padding: "8px" }}>
+                      {log.user_login || (
+                        <span style={{ color: "red" }}>Неизвестный</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "8px" }}>
+                      {log.operation_type === "login" && "🔐 Вход"}
+                      {log.operation_type === "logout" && "🚪 Выход"}
+                      {log.operation_type === "exchange" && "💱 Обмен"}
+                      {log.operation_type === "rate_set" &&
+                        "📈 Установка курса"}
+                      {!log.operation_type && "📝 Другое"}
+                    </td>
+                    <td style={{ padding: "8px" }}>{log.action_description}</td>
+                    <td style={{ padding: "8px" }}>{log.ip_address || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
