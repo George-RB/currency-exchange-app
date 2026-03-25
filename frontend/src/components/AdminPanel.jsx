@@ -428,50 +428,6 @@ const AdminPanel = () => {
           {syncing ? "Синхронизация..." : "🇧🇾 Синхронизировать с Нацбанком"}
         </button>
 
-        <div
-          style={{
-            marginTop: "40px",
-            borderTop: "2px solid #007bff",
-            paddingTop: "20px",
-          }}
-        >
-          <h2 style={{ color: "#007bff" }}>💰 Касса</h2>
-
-          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-            {cashData.map((item) => (
-              <div
-                key={item.currency_code}
-                style={{
-                  background: "#f8f9fa",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  minWidth: "150px",
-                  textAlign: "center",
-                }}
-              >
-                <div style={{ fontSize: "24px", fontWeight: "bold" }}>
-                  {item.currency_code}
-                </div>
-                <div style={{ fontSize: "20px", color: "#007bff" }}>
-                  {Number(item.amount).toFixed(2)}
-                </div>
-                <div style={{ marginTop: "10px" }}>
-                  <button
-                    onClick={() => openCashModal(item.currency_code, "add")}
-                  >
-                    ➕
-                  </button>
-                  <button
-                    onClick={() => openCashModal(item.currency_code, "remove")}
-                  >
-                    ➖
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {cashModal.show && (
           <div
             style={{
@@ -510,6 +466,12 @@ const AdminPanel = () => {
                 onChange={(e) =>
                   setCashModal({ ...cashModal, amount: e.target.value })
                 }
+                onKeyPress={(e) => {
+                  // Разрешаем только цифры, точку и минус
+                  if (!/[0-9.]/.test(e.key) && e.key !== "." && e.key !== "-") {
+                    e.preventDefault();
+                  }
+                }}
                 style={{ width: "100%", padding: "8px", margin: "10px 0" }}
               />
               <div
@@ -951,6 +913,7 @@ const AdminPanel = () => {
               <option value="logout">Выходы</option>
               <option value="exchange">Обмены</option>
               <option value="rate_set">Установка курсов</option>
+              <option value="cash">Касса</option>
             </select>
           </div>
 
@@ -982,6 +945,7 @@ const AdminPanel = () => {
                       {log.operation_type === "exchange" && "💱 Обмен"}
                       {log.operation_type === "rate_set" &&
                         "📈 Установка курса"}
+                      {log.operation_type === "cash" && "💰 Касса"}
                       {!log.operation_type && "📝 Другое"}
                     </td>
                     <td style={{ padding: "8px" }}>{log.action_description}</td>
