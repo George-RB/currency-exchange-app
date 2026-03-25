@@ -59,7 +59,7 @@ CREATE TABLE operations_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Лог действий пользователей';
 
 -- =====================================================
--- Дополнительные индексы для ускорения отчетов -- NEW
+-- Дополнительные индексы для ускорения отчетов 
 -- =====================================================
 CREATE INDEX idx_reports_date ON operations_log (datetime);
 CREATE INDEX idx_reports_currencies ON operations_log (from_currency, to_currency);
@@ -87,8 +87,8 @@ CREATE TABLE sessions (
 
 -- Добавляем пользователей 
 INSERT INTO users (login, password, role) VALUES
-('admin', 'admin123', 'admin'),
-('operator', 'operator123', 'operator');
+('admin', '$2b$10$ExqHiKCoGzXVHY23zBAtOOCBmKBQgua5Vzg0qmjYhAyPwQWY/plB2', 'admin'),
+('operator', '$2b$10$HvpNAi9l26R8eiFQGiwubOt/w.1XL1/DMT0jfn7Z3lwfiSrhJwfBu', 'operator');
 
 -- Добавляем начальные курсы валют
 INSERT INTO currency_rates (currency_code, rate, date) VALUES
@@ -121,7 +121,7 @@ VALUES
 (1, 'Установлен курс USD = 2.5000', NOW() - INTERVAL 1 DAY, NULL, NULL, NULL, NULL, NULL, '127.0.0.1'),
 (1, 'Сброс всех курсов к начальным значениям', NOW() - INTERVAL 3 DAY, NULL, NULL, NULL, NULL, NULL, '127.0.0.1');
 
--- Дополнительные тестовые операции для разных валютных пар -- NEW
+-- Дополнительные тестовые операции для разных валютных пар 
 INSERT INTO operations_log (user_id, action_description, datetime, amount, from_currency, to_currency, result_amount, session_id, ip_address)
 VALUES
 (2, 'Обмен 500 USD -> 450.00 EUR', NOW() - INTERVAL 3 DAY, 500, 'USD', 'EUR', 450.00, 'test_session_4', '127.0.0.1'),
@@ -151,7 +151,7 @@ JOIN users u ON ol.user_id = u.id
 WHERE ol.action_description LIKE 'Обмен%'
 ORDER BY ol.datetime DESC;
 
--- Представление для админа (уже готово для полных отчетов!) -- NEW
+-- Представление для админа 
 CREATE OR REPLACE VIEW v_admin_report AS
 SELECT 
     DATE(ol.datetime) as operation_date,
@@ -180,7 +180,7 @@ END//
 DELIMITER ;
 
 -- =====================================================
--- Проверка структуры для отчетов -- NEW
+-- Проверка структуры для отчетов 
 -- =====================================================
 SELECT 'Проверка структуры для отчетов:' as 'Check';
 SELECT 
