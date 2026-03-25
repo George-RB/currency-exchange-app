@@ -134,7 +134,8 @@ ORDER BY ol.datetime DESC;
 -- Добавляем пользователей 
 INSERT INTO users (login, password, role) VALUES
 ('admin', '$2b$10$ExqHiKCoGzXVHY23zBAtOOCBmKBQgua5Vzg0qmjYhAyPwQWY/plB2', 'admin'),
-('operator', '$2b$10$HvpNAi9l26R8eiFQGiwubOt/w.1XL1/DMT0jfn7Z3lwfiSrhJwfBu', 'operator');
+('operator', '$2b$10$HvpNAi9l26R8eiFQGiwubOt/w.1XL1/DMT0jfn7Z3lwfiSrhJwfBu', 'operator'),
+('operator2', '$2b$10$HvpNAi9l26R8eiFQGiwubOt/w.1XL1/DMT0jfn7Z3lwfiSrhJwfBu', 'operator');
 
 -- Добавляем начальные курсы валют
 INSERT INTO currency_rates (currency_code, rate, date) VALUES

@@ -500,4 +500,45 @@ router.post("/cash/remove", async (req, res) => {
   );
 });
 
+// ===== СРАВНИТЕЛЬНЫЙ ОТЧЁТ ПО ОПЕРАТОРАМ =====
+router.get("/operators-report", async (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  let sql = `
+    SELECT 
+      u.login AS operator,
+      COUNT(ol.id) AS operations_count,
+      COALESCE(SUM(ol.amount), 0) AS total_amount_from,
+      COALESCE(SUM(ol.result_amount), 0) AS total_amount_to,
+      COALESCE(AVG(ol.result_amount), 0) AS avg_operation
+    FROM operations_log ol
+    JOIN users u ON ol.user_id = u.id
+    WHERE ol.operation_type = 'exchange'
+      AND u.role = 'operator'
+  `;
+
+  const params = [];
+
+  if (startDate) {
+    sql += " AND DATE(ol.datetime) >= ?";
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    sql += " AND DATE(ol.datetime) <= ?";
+    params.push(endDate);
+  }
+
+  sql += ` GROUP BY u.login ORDER BY operations_count DESC`;
+
+  connection.query(sql, params, (error, results) => {
+    if (error) {
+      console.error("Ошибка отчёта по операторам:", error);
+      return res.status(500).json({ error: "Ошибка загрузки отчёта" });
+    }
+
+    res.json({ success: true, operators: results });
+  });
+});
+
 module.exports = router;

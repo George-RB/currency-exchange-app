@@ -328,6 +328,24 @@ const AdminPanel = () => {
     loadCash();
   }, []);
 
+  const [operatorsReport, setOperatorsReport] = useState([]);
+
+  const loadOperatorsReport = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/operators-report`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) setOperatorsReport(data.operators);
+    } catch (error) {
+      console.error("Ошибка загрузки отчёта по операторам:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadOperatorsReport();
+  }, []);
+
   // ===== СКЛОНЕНИЕ СЛОВА "ОПЕРАЦИЯ" =====
   const getOperationWord = (count) => {
     const num = Math.abs(count) % 100;
@@ -487,6 +505,46 @@ const AdminPanel = () => {
             </div>
           </div>
         )}
+
+        <div
+          style={{
+            marginTop: "40px",
+            borderTop: "2px solid #007bff",
+            paddingTop: "20px",
+          }}
+        >
+          <h2 style={{ color: "#007bff" }}>
+            👥 Сравнительный отчёт по операторам
+          </h2>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#007bff", color: "white" }}>
+                <th style={{ padding: "8px" }}>Оператор</th>
+                <th style={{ padding: "8px" }}>Операций</th>
+                <th style={{ padding: "8px" }}>Сумма (отдано)</th>
+                <th style={{ padding: "8px" }}>Сумма (получено)</th>
+                <th style={{ padding: "8px" }}>Средняя операция</th>
+              </tr>
+            </thead>
+            <tbody>
+              {operatorsReport.map((op, idx) => (
+                <tr key={idx} style={{ borderBottom: "1px solid #ddd" }}>
+                  <td style={{ padding: "8px" }}>{op.operator}</td>
+                  <td style={{ padding: "8px" }}>{op.operations_count}</td>
+                  <td style={{ padding: "8px" }}>
+                    {Number(op.total_amount_from).toFixed(2)}
+                  </td>
+                  <td style={{ padding: "8px" }}>
+                    {Number(op.total_amount_to).toFixed(2)}
+                  </td>
+                  <td style={{ padding: "8px" }}>
+                    {Number(op.avg_operation).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* ===== КАССА ===== */}
         <div
