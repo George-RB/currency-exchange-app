@@ -69,17 +69,15 @@ CREATE INDEX idx_reports_currencies ON operations_log (from_currency, to_currenc
 -- =====================================================
 DROP TABLE IF EXISTS sessions;
 CREATE TABLE sessions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    session_id VARCHAR(100) UNIQUE NOT NULL,
+    session_id VARCHAR(100) PRIMARY KEY,
     user_id INT NOT NULL,
     login_time DATETIME NOT NULL,
     logout_time DATETIME DEFAULT NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_session_id (session_id),
     INDEX idx_user_sessions (user_id, login_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Сессии пользователей';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
 -- Добавление начальных данных
@@ -112,14 +110,13 @@ INSERT INTO currency_rates (currency_code, rate, date) VALUES
 ('EUR', 2.8600, DATE_SUB(CURDATE(), INTERVAL 5 DAY));
 
 -- Добавляем тестовые операции
+
 INSERT INTO operations_log (user_id, action_description, datetime, amount, from_currency, to_currency, result_amount, session_id, ip_address)
 VALUES
-(2, 'Обмен 100 USD -> 250.00 BYN', NOW() - INTERVAL 1 HOUR, 100, 'USD', 'BYN', 250.00, 'test_session_1', '127.0.0.1'),
-(2, 'Обмен 50 EUR -> 150.00 BYN', NOW() - INTERVAL 2 HOUR, 50, 'EUR', 'BYN', 150.00, 'test_session_1', '127.0.0.1'),
-(2, 'Обмен 1000 RUB -> 33.30 BYN', NOW() - INTERVAL 1 DAY, 1000, 'RUB', 'BYN', 33.30, 'test_session_2', '127.0.0.1'),
-(2, 'Обмен 200 USD -> 496.00 BYN', NOW() - INTERVAL 2 DAY, 200, 'USD', 'BYN', 496.00, 'test_session_3', '127.0.0.1'),
-(1, 'Установлен курс USD = 2.5000', NOW() - INTERVAL 1 DAY, NULL, NULL, NULL, NULL, NULL, '127.0.0.1'),
-(1, 'Сброс всех курсов к начальным значениям', NOW() - INTERVAL 3 DAY, NULL, NULL, NULL, NULL, NULL, '127.0.0.1');
+(2, 'Обмен 150 USD -> 375.00 BYN', NOW() - INTERVAL 1 DAY, 150, 'USD', 'BYN', 375.00, 'test_session_2', '127.0.0.1'),
+(2, 'Обмен 300 EUR -> 900.00 BYN', NOW() - INTERVAL 2 DAY, 300, 'EUR', 'BYN', 900.00, 'test_session_3', '127.0.0.1'),
+(2, 'Обмен 500 USD -> 1250.00 BYN', NOW() - INTERVAL 3 DAY, 500, 'USD', 'BYN', 1250.00, 'test_session_4', '127.0.0.1'),
+(2, 'Обмен 75 EUR -> 225.00 BYN', NOW() - INTERVAL 4 DAY, 75, 'EUR', 'BYN', 225.00, 'test_session_5', '127.0.0.1');
 
 -- Дополнительные тестовые операции для разных валютных пар 
 INSERT INTO operations_log (user_id, action_description, datetime, amount, from_currency, to_currency, result_amount, session_id, ip_address)

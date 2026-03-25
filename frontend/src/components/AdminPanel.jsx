@@ -62,7 +62,7 @@ const AdminPanel = () => {
   const currencies = ["USD", "EUR", "BYN", "RUB", "PLN"];
 
   // ===== ЗАГРУЗКА ПОЛНЫХ ОТЧЁТОВ С ФИЛЬТРАМИ =====
-  // 👈 ПЕРЕНЁС ЭТУ ФУНКЦИЮ НАВЕРХ!
+
   const loadFullReports = async () => {
     try {
       let url = `${API_URL}/api/admin/reports/full?`;
@@ -101,9 +101,8 @@ const AdminPanel = () => {
   // Загружаем полные отчёты при изменении фильтров
   useEffect(() => {
     loadFullReports();
-  }, [filters]); // 👈 УБРАЛ loadFullReports из зависимостей
+  }, [filters]);
 
-  // ===== ЗАГРУЗКА ТЕКУЩИХ КУРСОВ =====
   // ===== ЗАГРУЗКА ТЕКУЩИХ КУРСОВ =====
   const loadCurrentRates = async () => {
     try {
@@ -338,17 +337,22 @@ const AdminPanel = () => {
           {reports.length === 0 ? (
             <p>Нет данных</p>
           ) : (
-            reports.map((report) => (
-              <div key={report.date} className={STYLES.reportItem}>
-                {new Date(report.date).toLocaleDateString("ru-RU")}:{" "}
-                {getOperationWord(report.operations_count)}
-              </div>
-            ))
+            reports.map((report) => {
+              let displayDate = report.date;
+              if (report.date && report.date.includes("-")) {
+                displayDate = new Date(report.date).toLocaleDateString("ru-RU");
+              }
+              return (
+                <div key={report.date}>
+                  {displayDate}: {getOperationWord(report.operations_count)}
+                </div>
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* ===== НОВОЕ: ПОЛНЫЕ ОТЧЁТЫ С ФИЛЬТРАМИ ===== */}
+      {/* =====  ПОЛНЫЕ ОТЧЁТЫ С ФИЛЬТРАМИ ===== */}
       <div
         style={{
           marginTop: "40px",

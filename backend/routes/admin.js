@@ -87,24 +87,18 @@ router.post("/reset-rates", async (req, res) => {
 router.get("/reports", async (req, res) => {
   connection.query(
     `SELECT 
-        DATE(datetime) as date, 
+        DATE_FORMAT(datetime, '%d.%m.%Y') as date, 
         COUNT(*) as operations_count
      FROM operations_log 
      WHERE action_description LIKE 'Обмен%'
-     GROUP BY DATE(datetime) 
-     ORDER BY DATE(datetime) DESC`,
+     GROUP BY DATE_FORMAT(datetime, '%d.%m.%Y')
+     ORDER BY STR_TO_DATE(date, '%d.%m.%Y') DESC`,
     (error, results) => {
       if (error) {
         console.error("Ошибка отчетов:", error);
         return res.status(500).json({ error: "Ошибка загрузки отчетов" });
       }
-
-      const formattedReports = results.map((report) => ({
-        ...report,
-        date: new Date(report.date).toLocaleDateString("ru-RU"),
-      }));
-
-      res.json({ success: true, reports: formattedReports });
+      res.json({ success: true, reports: results });
     },
   );
 });
